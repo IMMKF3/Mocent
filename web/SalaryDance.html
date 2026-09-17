@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#f7f1e6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="工资跳动">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/png" media="(prefers-color-scheme: light)" href="icon-192.png">
+<link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icon-dark-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>摸薪 Mocent · 摸鱼的时候，工资也在涨</title>
+<style>
+  :root{
+    --bg:#f7f1e6; --card:#fffdf9; --ink:#43352a; --sub:#a4917c; --line:#f0e4d2;
+    --brand:#ff8a3d; --brand-deep:#e2711d; --green:#2fa36b; --amber:#e6a23c;
+    --red:#e15554; --purple:#7d6be0; --teal:#5bb8a8;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans SC","Segoe UI","Microsoft YaHei",sans-serif;
+    background:linear-gradient(160deg,#faf5ec 0%,#f5ead9 55%,#f3e3cd 100%);
+    color:var(--ink); min-height:100vh; display:flex; justify-content:center;
+  }
+  .app{width:100%; max-width:520px; height:100vh; height:100dvh; display:flex; flex-direction:column; position:relative;}
+  @media(min-width:560px){
+    body{padding:20px 0}
+    .app{max-width:480px;height:calc(100dvh - 40px);border-radius:32px;background:#faf5ec;
+      box-shadow:0 24px 60px rgba(120,80,30,.18),0 2px 8px rgba(120,80,30,.08);overflow:hidden}
+  }
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 8px}
+  .brand{font-weight:900;font-size:19px;letter-spacing:.5px}
+  .brand small{font-size:12px;color:var(--sub);font-weight:600;margin-left:6px}
+  .gear{border:none;background:#fff;border-radius:12px;width:36px;height:36px;font-size:17px;cursor:pointer;
+    box-shadow:0 2px 8px rgba(120,90,40,.12);transition:transform .15s}
+  .gear:active{transform:rotate(40deg) scale(.92)}
+
+  main{flex:1;overflow-y:auto;padding:6px 16px 34px;scrollbar-width:none}
+  main::-webkit-scrollbar{display:none}
+  .page{animation:pagein .28s ease}
+  @keyframes pagein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .hidden{display:none!important}
+
+  .card{background:var(--card);border-radius:20px;padding:18px;margin-bottom:14px;
+    box-shadow:0 6px 18px rgba(130,95,45,.08);border:1px solid #fff8ec}
+  .card-title{font-size:13px;font-weight:800;color:var(--sub);letter-spacing:1px;margin-bottom:12px}
+
+  .money-card{position:relative;overflow:hidden;text-align:center;padding:22px 18px 16px}
+  .status-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+    background:#f6efe2;color:#8a7a66;border-radius:999px;padding:5px 12px;margin-bottom:10px}
+  .status-chip .dot{width:8px;height:8px;border-radius:50%;background:#9b8a78}
+  .money{font-size:clamp(46px,13vw,66px);font-weight:900;line-height:1.05;letter-spacing:-1px;
+    font-variant-numeric:tabular-nums;font-feature-settings:"tnum";display:inline-block}
+  .money .cur{font-size:.5em;font-weight:800;color:var(--sub);margin-right:4px;vertical-align:.12em}
+  .money .d{display:inline-block;min-width:.58em;text-align:center}
+  .money .d.tick{animation:dtick .32s cubic-bezier(.2,.9,.3,1.2)}
+  @keyframes dtick{0%{transform:translateY(-.4em);opacity:0}100%{transform:none;opacity:1}}
+  .money-sub{color:var(--sub);font-size:13px;margin-top:8px}
+  .floaters{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .floater{position:absolute;font-size:13px;font-weight:800;color:var(--green);animation:rise 1.7s ease-out forwards}
+  @keyframes rise{0%{opacity:0;transform:translateY(6px)}15%{opacity:1}100%{opacity:0;transform:translateY(-46px)}}
+  .rates{display:flex;gap:10px;margin-top:16px}
+  .rate{flex:1;background:#faf4e8;border-radius:14px;padding:10px 4px}
+  .rate b{display:block;font-size:15px;font-variant-numeric:tabular-nums}
+  .rate span{font-size:11px;color:var(--sub)}
+  .days-note{font-size:11px;color:#bfae98;margin-top:10px}
+  .chip-row{display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .mode-switch{display:flex;background:#f6efe2;border-radius:999px;padding:3px}
+  .mode-switch button{border:none;background:none;font:inherit;font-size:12px;font-weight:800;color:#9b8a78;
+    padding:4px 13px;border-radius:999px;cursor:pointer;transition:.15s}
+  .mode-switch button.on{background:#fff;color:var(--brand-deep);box-shadow:0 1px 4px rgba(120,90,40,.18)}
+  .tax-note{display:none;font-size:11px;color:#bfae98;margin-top:8px;line-height:1.55}
+
+  .tl-wrap{position:relative;padding:10px 4px 4px}
+  .tl{position:relative;height:14px;border-radius:999px;background:#efe5d2;overflow:hidden}
+  .tl-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;
+    background:linear-gradient(90deg,#ffc06e,#ff8a3d);transition:width .4s}
+  .tl-lunch{position:absolute;top:0;bottom:0;
+    background:repeating-linear-gradient(45deg,rgba(255,253,247,.95) 0 5px,rgba(230,162,60,.35) 5px 10px)}
+  .tl-dot{position:absolute;top:50%;width:20px;height:20px;border-radius:50%;background:#fff;
+    border:4px solid var(--brand);transform:translate(-50%,-50%);box-shadow:0 2px 6px rgba(226,113,29,.4);
+    transition:left .4s}
+  .tl-labels{display:flex;justify-content:space-between;font-size:11.5px;color:var(--sub);margin-top:8px}
+  .tl-now{text-align:center;font-size:13px;font-weight:700;margin-top:10px;color:#7a6a58}
+
+  .pet-dock{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none}
+  .pet-emoji{font-size:38px;line-height:1;animation:bob 2.6s ease-in-out infinite;filter:drop-shadow(0 3px 4px rgba(120,90,40,.25))}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-6px) rotate(2deg)}}
+  .pet-emoji.hop,.pet-big.hop{animation:hop .5s ease!important}
+  @keyframes hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-14px) scale(1.15)}}
+  .pet-big.swap-r{animation:swapR .5s cubic-bezier(.2,.85,.3,1.25)!important}
+  .pet-big.swap-l{animation:swapL .5s cubic-bezier(.2,.85,.3,1.25)!important}
+  @keyframes swapR{0%{transform:translateX(56px) scale(.55);opacity:0}55%{transform:translateX(-9px) scale(1.07)}100%{transform:none;opacity:1}}
+  @keyframes swapL{0%{transform:translateX(-56px) scale(.55);opacity:0}55%{transform:translateX(9px) scale(1.07)}100%{transform:none;opacity:1}}
+  .bubble{position:relative;flex:1;background:#fff;border:1.5px solid #f3e7d0;border-radius:16px;
+    padding:10px 13px;font-size:13.5px;line-height:1.55;color:#6b5a48;min-height:44px;display:flex;align-items:center}
+  .bubble:before{content:'';position:absolute;left:-6px;top:50%;width:10px;height:10px;background:#fff;
+    border-left:1.5px solid #f3e7d0;border-bottom:1.5px solid #f3e7d0;transform:translateY(-50%) rotate(45deg)}
+  .bubble.pop{animation:bpop .35s ease}
+  @keyframes bpop{0%{transform:scale(.92);opacity:.4}100%{transform:none;opacity:1}}
+
+  .stats2{display:flex;gap:8px;padding:0 2px}
+  .stats2>div{flex:1;text-align:center;padding:4px 0;min-width:0}
+  .stats2 b{display:block;font-size:15.5px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stats2 span{font-size:10.5px;color:var(--sub);white-space:nowrap}
+
+  .field{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px dashed var(--line)}
+  .field:last-child{border-bottom:none}
+  .field label{font-size:14px;font-weight:600;flex:1;min-width:0;line-height:1.45}
+  .field input[type=text],.field input[type=number],.field input[type=time]{
+    border:1px solid #eddfc6;background:#fff;border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;
+    color:var(--ink);text-align:right;outline:none;min-width:0;font-variant-numeric:tabular-nums}
+  .field input[type=text]{width:138px}
+  .field input[type=number]{width:112px}
+  .field input[type=time]{width:118px}
+  .field input:focus{border-color:var(--brand)}
+  .convert-result{background:#faf4e6;border-radius:14px;padding:12px 14px;margin-top:12px;font-size:13.5px;
+    color:#6b5a48;line-height:1.6;min-height:44px}
+  .convert-result b{color:var(--brand-deep);font-size:15px}
+  .btn{border:none;border-radius:14px;padding:12px 16px;font:inherit;font-weight:800;font-size:14.5px;cursor:pointer;
+    background:linear-gradient(135deg,#ffb25e,#ff8a3d);color:#fff;box-shadow:0 6px 14px rgba(226,113,29,.3);
+    transition:transform .12s;width:100%;margin-top:12px}
+  .btn:active{transform:scale(.97)}
+  .btn.ghost{background:#fff;color:#8a7a66;border:1.5px solid #ecdfc8;box-shadow:none}
+  .btn-row{display:flex;gap:10px}
+  .btn-row .btn{margin-top:10px}
+  .wish-item{border:1px solid #f3e8d4;border-radius:16px;padding:13px 14px;margin-bottom:11px;background:#fffefb}
+  .wi-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .wi-head b{font-size:15px}
+  .wi-price{font-weight:800;color:var(--brand-deep);font-variant-numeric:tabular-nums}
+  .wi-sub{font-size:12px;color:var(--sub);margin:5px 0 9px}
+  .wi-bar{height:9px;border-radius:999px;background:#f2e8d6;overflow:hidden}
+  .wi-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#7ddba9,#2fa36b);transition:width .6s}
+  .wi-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--sub)}
+  .wi-del{border:none;background:none;color:#cba58a;font-size:12px;cursor:pointer;padding:4px 6px}
+  .empty{color:var(--sub);font-size:13px;text-align:center;padding:18px 0}
+  .caption{font-size:11.5px;color:#bfae98;margin-top:10px;line-height:1.6}
+
+  .break-main{text-align:center;padding:26px 18px}
+  .break-timer{font-size:54px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:1px}
+  .break-cost{color:var(--sub);font-size:13.5px;margin:6px 0 18px}
+  .break-cost b{color:var(--green)}
+  .big-btn{border:none;width:110px;height:110px;border-radius:50%;font:inherit;font-size:17px;font-weight:900;cursor:pointer;
+    color:#fff;background:linear-gradient(145deg,#8fd3ae,#2fa36b);box-shadow:0 10px 24px rgba(47,163,107,.35);
+    transition:transform .15s,background .3s}
+  .big-btn.on{background:linear-gradient(145deg,#f39898,#e15554);box-shadow:0 10px 24px rgba(225,85,84,.35)}
+  .big-btn:active{transform:scale(.94)}
+  .hint{font-size:12px;color:#b8a88f;margin-top:16px;line-height:1.6}
+  .break-item{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px dashed var(--line);font-size:13.5px}
+  .break-item:last-child{border-bottom:none}
+  .break-item .t{color:var(--sub);font-size:12px}
+  .break-item b{font-variant-numeric:tabular-nums;color:var(--green)}
+
+  .leave-big{font-size:56px;font-weight:900;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1.1}
+  .leave-unit{font-size:22px;color:var(--sub);font-weight:700;margin-left:4px}
+  .leave-sub{color:var(--sub);font-size:13.5px;margin-top:6px}
+  .leave-sub b{color:#5a8a4a;font-variant-numeric:tabular-nums}
+  .inline-ctl{display:flex;gap:8px;align-items:center}
+  .inline-ctl input{width:84px!important}
+  .inline-ctl select{width:64px}
+
+  .pet-stage-card{text-align:center;padding:26px 18px}
+  .pet-stage-row{display:flex;align-items:center;justify-content:center;gap:12px}
+  .pet-nav{border:none;background:#fff;border-radius:50%;width:34px;height:34px;font-size:20px;color:#b6a48d;
+    cursor:pointer;box-shadow:0 2px 6px rgba(120,90,40,.12);flex:none;line-height:1;transition:transform .12s}
+  .pet-nav:active{transform:scale(.88)}
+  .pet-stage{height:120px;display:flex;align-items:center;justify-content:center;flex:1;overflow:hidden}
+  .pet-big{font-size:86px;line-height:1;animation:bob 2.6s ease-in-out infinite;cursor:pointer;user-select:none;
+    filter:drop-shadow(0 6px 10px rgba(120,90,40,.25))}
+  .pet-name{font-size:19px;font-weight:900;margin-top:6px}
+  .pet-desc{font-size:12.5px;color:var(--sub);margin:4px 0 14px}
+  .pet-bubble-center{max-width:320px;margin:0 auto;text-align:left}
+  .pet-bubble-center:before{display:none}
+  .pet-grid{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;
+    padding:4px 2px 12px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .pet-grid::-webkit-scrollbar{display:none}
+  .pet-option{flex:0 0 31.5%;min-width:31.5%;scroll-snap-align:center;border:2px solid #f0e4cf;border-radius:16px;
+    padding:14px 4px;text-align:center;cursor:pointer;background:#fff;transition:.15s;user-select:none}
+  .pet-option .pe{font-size:34px;display:block}
+  .pet-option .pn{font-size:13px;font-weight:800;margin-top:6px}
+  .pet-option .pd{font-size:10.5px;color:var(--sub)}
+  .pet-option.sel{border-color:var(--brand);background:#fff6ea;box-shadow:0 4px 12px rgba(226,113,29,.15);transform:translateY(-2px)}
+
+  .sw{position:relative;width:46px;height:28px;flex:none}
+  .sw input{opacity:0;width:100%;height:100%;position:absolute;margin:0;cursor:pointer;z-index:2}
+  .sw i{position:absolute;inset:0;background:#e8dcc8;border-radius:999px;transition:.2s}
+  .sw i:after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;background:#fff;border-radius:50%;
+    transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .sw input:checked+i{background:var(--brand)}
+  .sw input:checked+i:after{left:21px}
+  select{border:1px solid #eddfc6;background:#fff;border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;color:var(--ink);outline:none}
+
+  .tabbar{display:flex;background:rgba(255,253,249,.92);backdrop-filter:blur(10px);
+    border-top:1px solid #f2e6d2;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+  .tab{flex:1;border:none;background:none;font:inherit;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;gap:2px;padding:6px 0;color:#b6a48d;font-size:11px;font-weight:700;border-radius:12px;transition:.15s}
+  .tab .ti{font-size:21px;line-height:1;transition:transform .18s}
+  .tab.on{color:var(--brand-deep)}
+  .tab.on .ti{transform:translateY(-2px) scale(1.15)}
+
+  .footer-note{text-align:center;font-size:11px;color:#c4b49e;padding:4px 20px 16px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">🐱 摸薪 Mocent<small>摸着摸着就涨薪</small></div>
+    <button class="gear" id="gearBtn" title="设置" aria-label="设置">⚙️</button>
+  </header>
+
+  <main id="main">
+
+    <!-- ================= 今日 ================= -->
+    <section class="page" id="page-today">
+      <div class="card money-card">
+        <div class="chip-row">
+          <div class="status-chip" id="statusChip" style="margin-bottom:0"><i class="dot" id="statusDot"></i><span id="statusText">…</span></div>
+          <div class="mode-switch" id="modeSwitch">
+            <button type="button" data-mode="gross">税前</button><button type="button" data-mode="net">税后</button>
+          </div>
+        </div>
+        <div class="money"><span class="cur">¥</span><span id="todayMoney"></span></div>
+        <div class="money-sub">今天已计薪 · <span id="todayClock">--:--:--</span></div>
+        <div class="floaters" id="floaters"></div>
+        <div class="rates">
+          <div class="rate"><b id="rateHour">--</b><span>时薪</span></div>
+          <div class="rate"><b id="rateMin">--</b><span>分薪</span></div>
+          <div class="rate"><b id="rateSec">--</b><span>秒薪</span></div>
+        </div>
+        <div class="days-note">按本月 <b id="daysNote">-</b> 个工作日动态计算 · 已自动排除法定节假日、计入调休上班</div>
+        <div class="tax-note" id="taxNote"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">今天的时间线</div>
+        <div class="tl-wrap">
+          <div class="tl">
+            <div class="tl-lunch" id="tlLunch"></div>
+            <div class="tl-fill" id="tlFill"></div>
+          </div>
+          <div class="tl-dot" id="tlDot" style="left:0%"></div>
+        </div>
+        <div class="tl-labels"><span id="tlStart">09:00</span><span id="tlLunchLabel">午休 1h</span><span id="tlEnd">18:00</span></div>
+        <div class="tl-now" id="tlNow"></div>
+      </div>
+
+      <div class="card stats2">
+        <div><b id="monthEarned">¥0</b><span>本月已计薪</span></div>
+        <div><b id="paydayLeft">-</b><span>距发工资</span></div>
+        <div><b id="dayTotal">¥0</b><span>全天工资</span></div>
+        <div><b id="leaveStat">-</b><span>年假（天）</span></div>
+      </div>
+
+      <div class="card pet-dock" id="petDock" title="戳一下">
+        <div class="pet-emoji" id="dockPet">🐱</div>
+        <div class="bubble" id="dockBubble">…</div>
+      </div>
+    </section>
+
+    <!-- ================= 心愿 ================= -->
+    <section class="page hidden" id="page-wish">
+      <div class="card">
+        <div class="card-title">把想买的，换成工作时间</div>
+        <div class="field"><label>想买什么</label><input type="text" id="wishName" placeholder="例：降噪耳机" maxlength="30"></div>
+        <div class="field"><label>多少钱（元）</label><input type="number" id="wishPrice" placeholder="例：1399" min="0" step="0.01"></div>
+        <div class="convert-result" id="convertResult">输入价格，看看它值多少个工作日。</div>
+        <button class="btn" id="wishAdd">放进心愿清单 🎁</button>
+      </div>
+      <div class="card">
+        <div class="card-title">心愿清单</div>
+        <div id="wishList"></div>
+        <div class="caption">进度 = 加入心愿后，工资跳动帮你看着计薪一点点积累 ✨</div>
+      </div>
+    </section>
+
+    <!-- ================= 摸鱼 ================= -->
+    <section class="page hidden" id="page-rest">
+      <div class="card break-main">
+        <div class="break-timer" id="breakTimer">00:00</div>
+        <div class="break-cost">这一段摸鱼，对应计薪 <b id="breakCost">¥0.00</b></div>
+        <button class="big-btn" id="breakBtn">开始<br>摸鱼</button>
+        <p class="hint">摸鱼时工资照常在涨，这里只是换个角度看看自己的时间 😌<br>开始休息点一下，结束休息再点一下。</p>
+      </div>
+      <div class="card">
+        <div class="card-title">今日摸鱼记录 <span id="breakTotal"></span></div>
+        <div id="breakList"></div>
+      </div>
+    </section>
+
+    <!-- ================= 年假 ================= -->
+    <section class="page hidden" id="page-leave">
+      <div class="card break-main">
+        <div class="status-chip" style="background:#eef6e6;color:#5a8a4a"><i class="dot" style="background:#7dbd6a"></i>🌴 年假余额 · 上班也在自动攒</div>
+        <div class="leave-big"><span id="leaveDays">0.00</span><span class="leave-unit"> 天</span></div>
+        <div class="leave-sub">= <b id="leaveHours">0.0</b> 小时 · 折算带薪假 ≈ <b id="leaveMoney">¥0</b></div>
+        <div class="leave-sub" style="margin-top:12px">今日已攒 <b id="leaveToday">+0.00</b> 小时 · 每工作日 +<b id="leavePer">0.25</b> 小时</div>
+      </div>
+      <div class="card">
+        <div class="card-title">请年假（从余额里扣一笔）</div>
+        <div class="field"><label>时长</label><span class="inline-ctl">
+          <input type="number" id="leaveUseAmt" min="0" step="0.5" placeholder="0.5">
+          <select id="leaveUseUnit"><option value="day">天</option><option value="hour">小时</option></select></span></div>
+        <div class="field"><label>备注（可选）</label><input type="text" id="leaveUseNote" placeholder="例：周五请一天" maxlength="20"></div>
+        <button class="btn" id="leaveUseBtn">请了！🌴</button>
+      </div>
+      <div class="card">
+        <div class="card-title">使用记录</div>
+        <div id="leaveLog"></div>
+      </div>
+    </section>
+
+    <!-- ================= 搭子 ================= -->
+    <section class="page hidden" id="page-pet">
+      <div class="card pet-stage-card">
+        <div class="pet-stage-row">
+          <button class="pet-nav" id="petPrev" aria-label="上一个">‹</button>
+          <div class="pet-stage"><span class="pet-big" id="petBig">🐱</span></div>
+          <button class="pet-nav" id="petNext" aria-label="下一个">›</button>
+        </div>
+        <div class="pet-name" id="petName">小薪</div>
+        <div class="pet-desc" id="petDesc">元气报数担当</div>
+        <div class="bubble pet-bubble-center pop" id="petBubble">…</div>
+      </div>
+      <div class="card">
+        <div class="card-title">选择你的桌边搭子 <span style="font-weight:400">← 左右滑动 / 点击切换 →</span></div>
+        <div class="pet-grid" id="petGrid"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">它的工作安排</div>
+        <div class="field"><label>定期汇报收入</label><select id="petReport">
+          <option value="10">每 10 分钟</option><option value="15">每 15 分钟</option>
+          <option value="30">每 30 分钟</option><option value="60">每 60 分钟</option></select></div>
+        <div class="field"><label>提醒喝水</label><span class="sw"><input type="checkbox" id="petWater" checked><i></i></span></div>
+        <div class="field"><label>提醒起来活动</label><span class="sw"><input type="checkbox" id="petMove" checked><i></i></span></div>
+        <div class="field"><label>加班时劝你休息</label><span class="sw"><input type="checkbox" id="petOvertime" checked><i></i></span></div>
+      </div>
+    </section>
+
+    <!-- ================= 设置 ================= -->
+    <section class="page hidden" id="page-set">
+      <div class="card">
+        <div class="card-title">收入与作息</div>
+        <div class="field"><label>月薪（税前）</label><input type="number" id="setSalary" min="0" step="100"></div>
+        <div class="field"><label>本月工作日（天）</label><input type="number" id="setDays" min="1" max="31" step="1"></div>
+        <div class="caption" id="daysAuto">默认按当月周一至周五自动统计，有法定节假日/调休可手动微调，下月自动重算。</div>
+        <div class="field"><label>发薪日</label><input type="number" id="setPayday" min="1" max="31" step="1"></div>
+        <div class="field"><label>上班时间</label><input type="time" id="setStart"></div>
+        <div class="field"><label>有午休</label><span class="sw"><input type="checkbox" id="setLunch"><i></i></span></div>
+        <div class="field"><label>午休开始</label><input type="time" id="setLunchStart"></div>
+        <div class="field"><label>午休结束</label><input type="time" id="setLunchEnd"></div>
+        <div class="field"><label>下班时间</label><input type="time" id="setEnd"></div>
+        <div class="field"><label>加班也计薪</label><span class="sw"><input type="checkbox" id="setOvertime"><i></i></span></div>
+        <div class="caption">计薪时间 = 上班到下班、扣除午休；工作日默认周一至周五。数据保存在本机浏览器里，不会上传。</div>
+      </div>
+      <div class="card">
+        <div class="card-title">五险一金 · 个税（税后计薪）</div>
+        <div class="field"><label>省份（自动填参数）</label><select id="taxProv"></select></div>
+        <div class="field"><label>城市</label><select id="taxCity"></select></div>
+        <div class="field"><label>按税后计薪</label><span class="sw"><input type="checkbox" id="taxOn"><i></i></span></div>
+        <div class="field"><label>公积金个人比例 %</label><input type="number" id="taxFund" min="0" max="12" step="0.5"></div>
+        <div class="field"><label>社保个人比例 %</label><input type="number" id="taxSocial" min="0" max="30" step="0.5"></div>
+        <div class="field"><label>个税起征点（元/月）</label><input type="number" id="taxThreshold" min="0" step="100"></div>
+        <div class="field"><label>缴费基数上限</label><input type="number" id="taxCap" min="0" step="100"></div>
+        <div class="field"><label>缴费基数下限</label><input type="number" id="taxFloor" min="0" step="100"></div>
+        <div class="field"><label>缴费档位（个人与公司同基数）</label><select id="taxTier">
+          <option value="full">足额 · 按工资全额</option>
+          <option value="p80">80% 档</option>
+          <option value="p60">60% 档 · 常见“最低档”</option>
+          <option value="custom">自定义基数</option>
+        </select></div>
+        <div class="field hidden" id="taxTierCustomField"><label>自定义缴费基数（元/月）</label><input type="number" id="taxTierCustom" min="0" step="100"></div>
+        <div class="field"><label>公司社保比例 %</label><input type="number" id="taxCoSocial" min="0" max="30" step="0.5"></div>
+        <div class="field"><label>公司公积金比例 %</label><input type="number" id="taxCoFund" min="0" max="12" step="0.5"></div>
+        <div class="caption" id="taxPreview"></div>
+        <div class="caption">地区选项为 2024–2025 年度常见参考值，各地每年 7 月前后调整，请以当地人社/公积金中心公布为准；选择后仍可逐项修改（一旦手改，地区自动变为“自定义”）。社保个人默认 10.5% = 养老 8% + 医疗 2% + 失业 0.5%；公司社保默认 26.5% ≈ 养老 16% + 医疗生育 ~9.5% + 失业/工伤 ~1%。缴费档位按工资比例近似折算基数（个人与公司同一基数，选“自定义基数”可精确填写，如按当地下限缴纳）；公司缴纳不扣个税、不影响到手，但公积金进账是你的隐藏收入。起征点可加上专项附加扣除（如房租房贷、子女教育）；基数上限/下限填 0 表示不限。个税按月度简化税率估算，不含年终奖。</div>
+      </div>
+      <div class="card">
+        <div class="card-title">年假</div>
+        <div class="field"><label>每工作日攒</label><span class="inline-ctl">
+          <input type="number" id="leavePerDay" min="0" step="0.05">
+          <select id="leavePerUnit"><option value="hour">小时</option><option value="day">天</option></select></span></div>
+        <div class="field"><label>当前余额</label><span class="inline-ctl">
+          <input type="number" id="leaveBase" min="0" step="0.5">
+          <select id="leaveBaseUnit"><option value="day">天</option><option value="hour">小时</option></select></span></div>
+        <div class="field"><label>1 天 = 几小时</label><input type="number" id="leaveStd" min="1" max="24" step="0.5"></div>
+        <div class="caption" id="leaveBaseNote"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">数据</div>
+        <div class="caption" id="calStatus" style="margin:0 0 6px"></div>
+        <button class="btn ghost" id="btnCal">更新节假日数据 🔄</button>
+        <div class="btn-row">
+          <button class="btn ghost" id="btnExport">导出数据</button>
+          <button class="btn ghost" id="btnImport">导入数据</button>
+        </div>
+        <input type="file" id="fileImport" accept=".json,application/json" class="hidden">
+      </div>
+      <p class="footer-note">数据保存在本机浏览器，不会上传 · 仅供个人参考 💛</p>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab on" data-page="today"><span class="ti">💰</span>今日</button>
+    <button class="tab" data-page="wish"><span class="ti">🎁</span>心愿</button>
+    <button class="tab" data-page="rest"><span class="ti">🐟</span>摸鱼</button>
+    <button class="tab" data-page="leave"><span class="ti">🌴</span>年假</button>
+    <button class="tab" data-page="pet"><span class="ti">🐾</span>搭子</button>
+    <button class="tab" data-page="set"><span class="ti">⚙️</span>设置</button>
+  </nav>
+</div>
+
+<script>
+(() => {
+'use strict';
+/* ================= 工具 ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const pad = n => String(n).padStart(2, '0');
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const fmt2 = y => y.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtC = c => fmt2(c / 100);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const dayKey = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const monthKey = d => d.getFullYear() + '-' + pad(d.getMonth() + 1);
+
+/* ================= 状态 ================= */
+const LS_KEY = 'salarydance.v1';
+const LS_KEY_OLD = 'moneydance.v1';                    // 旧版数据自动迁移
+const DEFAULTS = {
+  settings: { salary: 12000, payday: 10, start: '09:00',
+              lunch: true, lunchStart: '12:00', lunchEnd: '13:00', end: '18:00', overtime: false,
+              daysOverride: null, daysMonthKey: '',
+              tax: { enabled: false, fundRate: 12, socialRate: 10.5, threshold: 5000, baseCap: 0,
+                     baseTier: 'full', customBase: 0, coSocialRate: 26.5, coFundRate: 12,
+                     regionProv: 'custom', regionCity: 'custom', baseFloor: 0 } },
+  pet: { id: 'xiaoxin', water: true, move: true, overtimeCare: true, reportMin: 15 },
+  leave: { perDay: 0.25, perDayUnit: 'hour', base: 5, baseUnit: 'day',
+           baseDate: null, stdHours: 8, log: [] },     // 内部统一按小时记
+  cal: {},                                             // holiday-cn 在线节假日缓存 { '2026': {fetchedAt, off, work} }
+  wishlist: [],
+  breaks: [],
+  activeBreak: null,
+  lifetimeEarned: 0, monthEarned: 0, monthKey: '',
+  savedTodayEarned: 0, todayKey: '', paydaySaidKey: ''
+};
+function deepMerge(base, over) {
+  const out = Array.isArray(base) ? base.slice() : { ...base };
+  if (!over || typeof over !== 'object') return out;
+  for (const k of Object.keys(over)) {
+    if (over[k] && typeof over[k] === 'object' && !Array.isArray(over[k]) &&
+        base[k] && typeof base[k] === 'object' && !Array.isArray(base[k]))
+      out[k] = deepMerge(base[k], over[k]);
+    else out[k] = over[k];
+  }
+  return out;
+}
+function load() {
+  try {
+    let raw = localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_OLD);
+    return deepMerge(DEFAULTS, JSON.parse(raw || '{}'));
+  } catch (e) { return JSON.parse(JSON.stringify(DEFAULTS)); }
+}
+let state = load();
+let dirty = false;
+let suppressSave = false;                              // 重置/导入后禁止 beforeunload 把旧状态写回
+const save = () => {
+  if (suppressSave) return;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+  dirty = false;
+};
+const markDirty = () => { dirty = true; };
+
+/* ================= 核心计算：法定节假日 + 当月实际工作日动态计薪 ================= */
+/* 节假日数据来源：国务院办公厅通知（off=放假, work=调休上班）。2027 年安排公布后可补充。 */
+const CAL_RAW = [
+  { y: 2026,  // 国办发明电〔2025〕7号
+    off: [['01-01', '01-03', '元旦'], ['02-15', '02-23', '春节'], ['04-04', '04-06', '清明节'],
+          ['05-01', '05-05', '劳动节'], ['06-19', '06-21', '端午节'], ['09-25', '09-27', '中秋节'],
+          ['10-01', '10-07', '国庆节']],
+    work: [['01-04', '元旦'], ['02-14', '春节'], ['02-28', '春节'], ['05-09', '劳动节'], ['09-20', '国庆'], ['10-10', '国庆']] }
+];
+function buildFromRaw(c) {
+  const off = {}, work = {};
+  for (const [a, b, name] of c.off) {
+    const [am, ad] = a.split('-').map(Number), [bm, bd] = b.split('-').map(Number);
+    for (let d = new Date(c.y, am - 1, ad); d <= new Date(c.y, bm - 1, bd); d.setDate(d.getDate() + 1))
+      off[dayKey(d)] = name;
+  }
+  for (const [a, name] of c.work) work[c.y + '-' + a] = name;
+  return { y: c.y, off, work };
+}
+function buildCalendar() {                             // 在线更新（state.cal）优先，内置数据兜底
+  const out = [], seen = new Set();
+  for (const y of Object.keys(state.cal || {}).map(Number).sort()) {
+    const r = state.cal[String(y)];
+    if (r && r.off) { out.push({ y, off: r.off, work: r.work || {} }); seen.add(y); }
+  }
+  for (const c of CAL_RAW) if (!seen.has(c.y)) out.push(buildFromRaw(c));
+  return out;
+}
+let CAL = buildCalendar();
+/* 在线更新：holiday-cn（每日自动抓取国务院公告，GitHub 静态 JSON，无需 key） */
+const CAL_URLS = y => [
+  'https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/' + y + '.json',
+  'https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@master/' + y + '.json'
+];
+async function refreshCal(silent) {
+  const y = new Date().getFullYear();
+  for (const u of CAL_URLS(y)) {
+    try {
+      const res = await fetch(u);
+      if (!res.ok) continue;
+      const j = await res.json();
+      if (!j || j.year !== y || !Array.isArray(j.days) || !j.days.length) continue;
+      const off = {}, work = {};
+      for (const d of j.days) {
+        if (d.isOffDay) off[d.date] = d.name || '法定节假日';
+        else work[d.date] = d.name || '调休';
+      }
+      state.cal = state.cal || {};
+      state.cal[String(y)] = { fetchedAt: Date.now(), off, work };
+      CAL = buildCalendar();
+      markDirty(); save();
+      renderSettings(); uiTick();
+      if (!silent) say(`节假日数据已更新到 ${y} 年最新公告 ✅`);
+      return true;
+    } catch (e) { /* 换下一个源 */ }
+  }
+  if (!silent) say('暂时连不上节假日数据源，先用内置/缓存数据 📴');
+  return false;
+}
+const hasCalData = y => CAL.some(c => c.y === y);
+function holidayInfo(dk) {
+  for (const c of CAL) {
+    if (c.off[dk]) return { name: c.off[dk], off: true };
+    if (c.work[dk]) return { name: c.work[dk] + '调休上班', off: false };
+  }
+  return null;
+}
+function isWorkday(d) {
+  const h = holidayInfo(dayKey(d));
+  if (h) return !h.off;
+  const dow = d.getDay();
+  return dow >= 1 && dow <= 5;
+}
+function countWorkdays(fromD, toD) {                   // [from, to] 闭区间工作日数
+  let c = 0;
+  for (const d = new Date(fromD); d <= toD; d.setDate(d.getDate() + 1)) if (isWorkday(d)) c++;
+  return c;
+}
+function monthBreakdown(now) {                         // 当月工作日构成
+  const y = now.getFullYear(), m = now.getMonth();
+  const dim = new Date(y, m + 1, 0).getDate();
+  let weekdays = 0, hol = 0, makeup = 0;
+  const names = [];
+  for (let d = 1; d <= dim; d++) {
+    const dt = new Date(y, m, d), dk = dayKey(dt), dow = dt.getDay();
+    const isWd = dow >= 1 && dow <= 5;
+    if (isWd) weekdays++;
+    const h = holidayInfo(dk);
+    if (h && h.off && isWd) { hol++; if (!names.includes(h.name)) names.push(h.name); }
+    if (h && !h.off) makeup++;
+  }
+  return { weekdays, hol, makeup, net: weekdays - hol + makeup, names, hasData: hasCalData(y) };
+}
+function monthWorkdays() {
+  const now = new Date(), mk = monthKey(now);
+  if (state.settings.daysOverride && state.settings.daysMonthKey === mk)
+    return clamp(state.settings.daysOverride, 1, 31);
+  return monthBreakdown(now).net;
+}
+const toMin = t => { if (!t) return 0; const [h, m] = String(t).split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+function paidH() {
+  const s = state.settings, st = toMin(s.start), en = toMin(s.end);
+  let lunch = 0;
+  if (s.lunch) {
+    const a = Math.max(toMin(s.lunchStart), st), b = Math.min(toMin(s.lunchEnd), en);
+    if (b > a) lunch = b - a;
+  }
+  return Math.max(0, en - st - lunch) / 60;
+}
+/* 五险一金 · 个税（月度简化模型，比例可在设置中调整） */
+const TIER_NAMES = { full: '工资全额', p80: '工资 80% 档', p60: '工资 60% 档', custom: '自定义基数' };
+/* 全国地区五险一金参考值（2024–2025 年度常见口径，各地每年 7 月前后调整，可手动覆盖）
+   省级: [基数下限, 基数上限, 个人社保%, 公司社保%, 个人公积金%, 公司公积金%] */
+const PROV = {
+  '北京': [7162, 35811, 10.5, 26.7, 12, 12], '天津': [5124, 25620, 10.5, 26.3, 12, 12],
+  '上海': [7460, 37302, 10.5, 27.0, 12, 12], '重庆': [4403, 22017, 10.5, 25.5, 12, 12],
+  '河北': [4007, 20034, 10.5, 25.0, 12, 12], '山西': [4198, 20991, 10.5, 25.0, 12, 12],
+  '内蒙古': [4907, 24537, 10.5, 24.5, 12, 12], '辽宁': [4358, 21792, 10.5, 25.0, 12, 12],
+  '吉林': [4393, 21966, 10.5, 24.5, 12, 12], '黑龙江': [4542, 22710, 10.5, 24.5, 12, 12],
+  '江苏': [4952, 24762, 10.5, 25.5, 12, 12], '浙江': [5060, 25299, 10.5, 24.0, 12, 12],
+  '安徽': [4311, 21555, 10.5, 24.5, 12, 12], '福建': [4521, 22605, 10.5, 24.0, 12, 12],
+  '江西': [3915, 19575, 10.5, 24.0, 12, 12], '山东': [4504, 22518, 10.5, 25.0, 12, 12],
+  '河南': [3831, 19155, 10.5, 24.5, 12, 12], '湖北': [4869, 24356, 10.5, 25.0, 12, 12],
+  '湖南': [4072, 20361, 10.5, 24.5, 12, 12], '广东': [4580, 26421, 10.2, 22.5, 12, 12],
+  '广西': [4143, 20715, 10.5, 23.5, 12, 12], '海南': [4913, 24564, 10.5, 24.0, 12, 12],
+  '四川': [4588, 22938, 10.5, 23.5, 12, 12], '贵州': [4395, 21974, 10.5, 24.0, 12, 12],
+  '云南': [4358, 21789, 10.5, 24.5, 12, 12], '西藏': [7066, 35331, 10.5, 25.5, 12, 12],
+  '陕西': [4650, 23250, 10.5, 25.2, 12, 12], '甘肃': [4403, 22014, 10.5, 24.5, 12, 12],
+  '青海': [5290, 26448, 10.5, 24.5, 12, 12], '宁夏': [4955, 24774, 10.5, 25.0, 12, 12],
+  '新疆': [5069, 25344, 10.5, 24.5, 12, 12]
+};
+const PROV_CITIES = {
+  '北京': ['北京'], '天津': ['天津'], '上海': ['上海'], '重庆': ['重庆'],
+  '河北': ['石家庄', '唐山', '秦皇岛', '邯郸', '邢台', '保定', '张家口', '承德', '沧州', '廊坊', '衡水'],
+  '山西': ['太原', '大同', '阳泉', '长治', '晋城', '朔州', '晋中', '运城', '忻州', '临汾', '吕梁'],
+  '内蒙古': ['呼和浩特', '包头', '乌海', '赤峰', '通辽', '鄂尔多斯', '呼伦贝尔', '巴彦淖尔', '乌兰察布', '兴安盟', '锡林郭勒盟', '阿拉善盟'],
+  '辽宁': ['沈阳', '大连', '鞍山', '抚顺', '本溪', '丹东', '锦州', '营口', '阜新', '辽阳', '盘锦', '铁岭', '朝阳', '葫芦岛'],
+  '吉林': ['长春', '吉林', '四平', '辽源', '通化', '白山', '松原', '白城', '延边'],
+  '黑龙江': ['哈尔滨', '齐齐哈尔', '鸡西', '鹤岗', '双鸭山', '大庆', '伊春', '佳木斯', '七台河', '牡丹江', '黑河', '绥化', '大兴安岭'],
+  '江苏': ['南京', '无锡', '徐州', '常州', '苏州', '南通', '连云港', '淮安', '盐城', '扬州', '镇江', '泰州', '宿迁'],
+  '浙江': ['杭州', '宁波', '温州', '嘉兴', '湖州', '绍兴', '金华', '衢州', '舟山', '台州', '丽水'],
+  '安徽': ['合肥', '芜湖', '蚌埠', '淮南', '马鞍山', '淮北', '铜陵', '安庆', '黄山', '滁州', '阜阳', '宿州', '六安', '亳州', '池州', '宣城'],
+  '福建': ['福州', '厦门', '莆田', '三明', '泉州', '漳州', '南平', '龙岩', '宁德'],
+  '江西': ['南昌', '景德镇', '萍乡', '九江', '新余', '鹰潭', '赣州', '吉安', '宜春', '抚州', '上饶'],
+  '山东': ['济南', '青岛', '淄博', '枣庄', '东营', '烟台', '潍坊', '济宁', '泰安', '威海', '日照', '临沂', '德州', '聊城', '滨州', '菏泽'],
+  '河南': ['郑州', '开封', '洛阳', '平顶山', '安阳', '鹤壁', '新乡', '焦作', '濮阳', '许昌', '漯河', '三门峡', '南阳', '商丘', '信阳', '周口', '驻马店'],
+  '湖北': ['武汉', '黄石', '十堰', '宜昌', '襄阳', '鄂州', '荆门', '孝感', '荆州', '黄冈', '咸宁', '随州', '恩施'],
+  '湖南': ['长沙', '株洲', '湘潭', '衡阳', '邵阳', '岳阳', '常德', '张家界', '益阳', '郴州', '永州', '怀化', '娄底', '湘西'],
+  '广东': ['广州', '韶关', '深圳', '珠海', '汕头', '佛山', '江门', '湛江', '茂名', '肇庆', '惠州', '梅州', '汕尾', '河源', '阳江', '清远', '东莞', '中山', '潮州', '揭阳', '云浮'],
+  '广西': ['南宁', '柳州', '桂林', '梧州', '北海', '防城港', '钦州', '贵港', '玉林', '百色', '贺州', '河池', '来宾', '崇左'],
+  '海南': ['海口', '三亚', '三沙', '儋州'],
+  '四川': ['成都', '自贡', '攀枝花', '泸州', '德阳', '绵阳', '广元', '遂宁', '内江', '乐山', '南充', '眉山', '宜宾', '广安', '达州', '雅安', '巴中', '资阳', '阿坝', '甘孜', '凉山'],
+  '贵州': ['贵阳', '六盘水', '遵义', '安顺', '毕节', '铜仁', '黔西南', '黔东南', '黔南'],
+  '云南': ['昆明', '曲靖', '玉溪', '保山', '昭通', '丽江', '普洱', '临沧', '楚雄', '红河', '文山', '西双版纳', '大理', '德宏', '怒江', '迪庆'],
+  '西藏': ['拉萨', '日喀则', '昌都', '林芝', '山南', '那曲', '阿里'],
+  '陕西': ['西安', '铜川', '宝鸡', '咸阳', '渭南', '延安', '汉中', '榆林', '安康', '商洛'],
+  '甘肃': ['兰州', '嘉峪关', '金昌', '白银', '天水', '武威', '张掖', '平凉', '酒泉', '庆阳', '定西', '陇南', '临夏', '甘南'],
+  '青海': ['西宁', '海东', '海北', '黄南', '海南州', '果洛', '玉树', '海西'],
+  '宁夏': ['银川', '石嘴山', '吴忠', '固原', '中卫'],
+  '新疆': ['乌鲁木齐', '克拉玛依', '吐鲁番', '哈密', '昌吉', '博尔塔拉', '巴音郭楞', '阿克苏', '克孜勒苏', '喀什', '和田', '伊犁', '塔城', '阿勒泰']
+};
+/* 计划单列/口径特殊城市覆盖（格式同省级） */
+const CITY_FIX = {
+  '深圳': [2360, 27234, 10.5, 20.6, 12, 12],
+  '东莞': [4546, 26421, 10.2, 21.0, 12, 12]
+};
+function regionValues(prov, city) {
+  const p = PROV[prov]; if (!p) return null;
+  const v = CITY_FIX[city] || p;
+  return { floor: v[0], cap: v[1], social: v[2], coSocial: v[3], fund: v[4], coFund: v[5] };
+}
+function applyRegion(t) {
+  const v = regionValues(t.regionProv, t.regionCity);
+  if (!v) return;
+  t.baseFloor = v.floor; t.baseCap = v.cap;
+  t.socialRate = v.social; t.coSocialRate = v.coSocial;
+  t.fundRate = v.fund; t.coFundRate = v.coFund;
+}
+/* 地区参数：内置兜底 + 在线 regions.json 覆盖（同 holiday-cn 模式，改数据不用发版） */
+const REGIONS_CACHE_KEY = 'salarydance.regions';
+function applyRegionsData(data) {
+  if (!data || !data.provinces) return false;
+  let hit = 0;
+  for (const k of Object.keys(data.provinces)) {
+    const v = data.provinces[k];
+    if (PROV[k] && Array.isArray(v) && v.length === 6) { PROV[k] = v.slice(); hit++; }
+  }
+  return hit > 0;
+}
+function refreshRegions(silent) {
+  fetch('regions.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
+    if (!applyRegionsData(j)) return;
+    try { localStorage.setItem(REGIONS_CACHE_KEY, JSON.stringify(j)); } catch (e) {}
+    renderSettings();
+  }).catch(() => {});
+}
+const TAX_BRACKETS = [                                 // 月度换算税率表 [上限, 税率, 速算扣除数]
+  [3000, .03, 0], [12000, .10, 210], [25000, .20, 1410], [35000, .25, 2660],
+  [55000, .30, 4410], [80000, .35, 7160], [Infinity, .45, 15160]
+];
+function insBaseMonthly(salary) {                      // 缴费基数：档位折算 + 下限托底 + 上限封顶（个人与公司同基数）
+  const t = state.settings.tax;
+  let base = salary;
+  if (t.baseTier === 'p80') base *= 0.8;
+  else if (t.baseTier === 'p60') base *= 0.6;
+  else if (t.baseTier === 'custom' && t.customBase > 0) base = t.customBase;
+  if (t.baseFloor > 0) base = Math.max(base, t.baseFloor);
+  if (t.baseCap > 0) base = Math.min(base, t.baseCap);
+  return Math.max(0, base);
+}
+function insuranceMonthly(salary) {                    // 五险一金个人部分
+  const t = state.settings.tax;
+  return insBaseMonthly(salary) * (t.socialRate + t.fundRate) / 100;
+}
+function companyMonthly(salary) {                      // 公司缴纳部分（不进入个税，属隐藏福利）
+  const t = state.settings.tax;
+  return insBaseMonthly(salary) * (t.coSocialRate + t.coFundRate) / 100;
+}
+const fundMonthlyIn = salary => insBaseMonthly(salary) * (state.settings.tax.fundRate + state.settings.tax.coFundRate) / 100;  // 公积金账户月进账（个人+公司）
+function taxMonthly(salary) {                          // 月度个税（估算）
+  const t = state.settings.tax;
+  const taxable = salary - insuranceMonthly(salary) - t.threshold;
+  if (taxable <= 0) return 0;
+  for (const [limit, rate, quick] of TAX_BRACKETS)
+    if (taxable <= limit) return Math.max(0, taxable * rate - quick);
+}
+const netSalaryMonthly = salary => salary - insuranceMonthly(salary) - taxMonthly(salary);
+const taxFactor = () => {
+  const s = state.settings;
+  return (s.tax.enabled && s.salary > 0) ? netSalaryMonthly(s.salary) / s.salary : 1;
+};
+const perSec = () => { const h = paidH() || 8; return Math.max(0, state.settings.salary || 0) / (monthWorkdays() * h * 3600) * taxFactor(); };
+const perMinRate = () => perSec() * 60;
+const perHourRate = () => perSec() * 3600;
+const dailyPay = () => perHourRate() * paidH();
+const nowMinF = d => d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+function statusOf(d) {
+  if (!isWorkday(d)) return holidayInfo(dayKey(d)) ? 'holiday' : 'weekend';
+  const s = state.settings, n = nowMinF(d), st = toMin(s.start), en = toMin(s.end);
+  if (n < st) return 'before';
+  if (s.lunch && n >= toMin(s.lunchStart) && n < toMin(s.lunchEnd)) return 'lunch';
+  if (n < en) return 'working';
+  return s.overtime ? 'overtime' : 'after';
+}
+function paidElapsedMin(d) {
+  if (!isWorkday(d)) return 0;
+  const s = state.settings, n = nowMinF(d), st = toMin(s.start), en = toMin(s.end);
+  let m = Math.max(0, Math.min(n, en) - st);
+  if (s.lunch) {
+    const a = toMin(s.lunchStart), b = toMin(s.lunchEnd);
+    m -= Math.max(0, Math.min(n, b) - Math.max(a, st));
+  }
+  if (s.overtime && n > en) m += n - en;
+  return Math.max(0, m);
+}
+const todayEarnedCents = d => Math.round(paidElapsedMin(d) * 60 * perSec() * 100);
+
+const STATUS_META = {
+  before:  { t: '还没上班', c: '#8aa1c1' },
+  working: { t: '计薪中 · 数字在跳舞', c: '#2fa36b' },
+  lunch:   { t: '午休中 · 暂停计薪', c: '#e6a23c' },
+  overtime:{ t: '加班计薪中', c: '#e15554' },
+  after:   { t: '已收工', c: '#7d6be0' },
+  weekend: { t: '今天不上班', c: '#5bb8a8' },
+  holiday: { t: '法定节假日 · 不计薪', c: '#c9a227' }
+};
+
+/* ================= 桌宠 ================= */
+const PETS = {
+  xiaoxin: {
+    name: '小薪', emoji: '🐱', tag: '元气报数担当',
+    lines: {
+      before: ['早呀！{start} 才开始计薪，早饭先吃上 🍞', '马上开工，今天目标：把每一秒都赚得明明白白！'],
+      working: ['滴！刚刚 1 分钟又进账 {minute}，今天已经 {today} 啦 ✨', '秒薪 {sec}，你看，数字在跳舞 💃', '本月 {days} 个工作日，今天全天能赚 {day}！', '已赚 {today}，午饭给自己加个腿不过分 🍗', '悄悄说：公司这月又帮你交了 {company}，公积金户头月进 {fund} ✨'],
+      lunch: ['午休中，计薪暂停～饭要好好吃 🍚'],
+      overtime: ['加班中！这是 {hour}/小时 之外的坚持，记得心疼自己一点'],
+      after: ['收工！今天一共 {today}，数字交给你保管啦 🌙'],
+      weekend: ['今天不上班，秒薪也放假 🌿 去玩吧！'],
+      holiday: ['法定节假日！不计薪，但快乐是免费的 🎉'],
+      leave: ['年假余额 {leave} 天，攒够了就大胆请！'],
+      water: ['喝水时间！我刚舔了两爪子 💧'],
+      move: ['站起来扭一扭，学我伸个懒腰～'],
+      breakStart: ['好嘞，摸鱼计时开始 ⏱️ 数字我帮你盯着'],
+      breakEnd: ['回来啦！刚才那段值 {cost}，血赚（并没有）😂'],
+      poke: ['喵？戳我干嘛，工资又不会戳一下就翻倍哦 😼', '别戳啦，我在帮你数钱呢，已到账 {today}', '戳一下，摸鱼值 +1 秒；再戳一下，还是 +1 秒 🐟'],
+      pokeMad: ['喵呜！！再戳我就把你的秒薪叼走 🙀', '停！你这手速都够摸三条鱼了 🐟🐟🐟'],
+      payday: ['发薪日！！数字今天涨了就直接到账，快乐翻倍 🎉'],
+      wishDone: ['「{wish}」攒够啦！快去下单，别让心愿过夜 🎉']
+    }
+  },
+  mili: {
+    name: '摸米', emoji: '🐰', tag: '攒米碎碎念',
+    lines: {
+      before: ['今天也要……慢慢地、稳稳地攒米粒呀 🌾', '早早到也没关系，摸米会等你～'],
+      working: ['又攒下 {minute} 啦，一粒一粒也是米 ✨', '今天的米粒已经 {today} 了，好厉害！', '别急别急，秒薪 {sec}，它自己会长大', '公积金月进 {fund}，摸米的罐子也在悄悄变满 🌾'],
+      lunch: ['午休啦，胡萝卜时间 🥕 计薪先停一停'],
+      overtime: ['还在忙呀……钱是赚不完的，摸米会一直等你 🥺'],
+      after: ['今天赚到 {today}，装进小口袋，明天见 🌙'],
+      weekend: ['不上班的日子，摸米银行也关门咯 🌿'],
+      holiday: ['放假啦放假啦，摸米要去草地上打滚 🌿'],
+      leave: ['年假有 {leave} 天啦，记得休息呀 🌈'],
+      water: ['咕嘟咕嘟，喝水水～'],
+      move: ['蹦两下！像我一样竖起耳朵活动活动'],
+      breakStart: ['去去就回～摸米帮你看家 🏠'],
+      breakEnd: ['欢迎回来！刚才的 {cost} 就当买个开心啦'],
+      poke: ['哇，摸摸耳朵会带来好运米哦 🌾', '人家在攒米……你别晃我呀', '戳戳 = 摸摸，摸米感觉被偏爱了'],
+      pokeMad: ['呜……头都被戳晕了，米要撒出来啦 🥺', '再戳！再戳我就把米袋藏起来！'],
+      payday: ['发米日！米袋鼓鼓的一天 🌾✨'],
+      wishDone: ['米攒满啦，「{wish}」可以抱回家啦！🌾']
+    }
+  },
+  huanhuan: {
+    name: '缓缓', emoji: '🦫', tag: '温柔劝休大师',
+    lines: {
+      before: ['不急，早一点到也没关系，慢慢来。'],
+      working: ['已经 {today} 了，你看，时间没有白过。', '喝口茶，数字会自己往前走的。', '{hour} 一小时——你的时间很值钱，别把它花在焦虑上。'],
+      lunch: ['午休了，离开屏幕，让眼睛也歇歇 🍃'],
+      overtime: ['已经很努力啦。喝口水，收好手头的事，就早点休息吧。'],
+      after: ['今天到这里刚刚好。{today}，是你认真生活的一天。'],
+      weekend: ['今天不赚钱，赚休息。'],
+      holiday: ['法定假日，理直气壮地休息吧。'],
+      leave: ['年假是赚来的休息，别舍不得用。{leave} 天在等你。'],
+      water: ['水杯举起来，缓缓陪你喝这一杯 💧'],
+      move: ['站起来，看看窗外，缓一缓～'],
+      breakStart: ['休息不需要理由，去呼吸一下 🍃'],
+      breakEnd: ['回来了就好。慢慢进入状态，不急。'],
+      poke: ['嗯，我在。别急，有我在。', '戳我也没用哦，今天已经 {today} 了，安心。', '慢慢来，先喝口水再戳。'],
+      pokeMad: ['好啦好啦，我陪你坐一会儿，不戳了啊。'],
+      payday: ['工资到账的日子，记得给自己一点犒劳。'],
+      wishDone: ['「{wish}」攒够了。认真地生活，愿望会兑现的。']
+    }
+  },
+  pudding: {
+    name: '带薪', emoji: '🐶', tag: '带薪撒欢小尾巴',
+    lines: {
+      before: ['汪！今天也要冲在最前面，上班前先遛个弯 🐾'],
+      working: ['刚刚那分钟 +{minute}，尾巴又摇快了一点！', '累计 {today}！我去把下一个数字球叼回来 🎾', '时薪 {hour}，主人最棒！', '公司这月又帮你交了 {company}！跟着我，福利不漏！'],
+      lunch: ['午休！我的碗已经舔干净了，你吃好了吗 🍖'],
+      overtime: ['加班的话……我趴在脚边陪你，但别太晚哦 🐾'],
+      after: ['收工啦收工啦！出门撒欢！🎉'],
+      weekend: ['周末！公园！飞盘！走走走！🥏'],
+      holiday: ['法定节假日！全家出动，汪！🎊'],
+      leave: ['年假 {leave} 天，攒够了带我出去玩呀！'],
+      water: ['喝水！我也在舔水碗，一起 💧'],
+      move: ['去跑两圈！牵引绳我都叼来了'],
+      breakStart: ['你歇着，我放哨 🐕'],
+      breakEnd: ['欢迎回来！尾巴已摇出残影！'],
+      poke: ['汪！带薪！点名就到！', '你戳我一下，我摇三下尾巴 🐾', '戳我 = 带薪撸狗，这波血赚！'],
+      pokeMad: ['汪汪汪！尾巴要摇出火星子啦！', '再戳我就扑上去舔你一脸 🐶'],
+      payday: ['汪汪！！发工资日！零食预算拉满！🍖'],
+      wishDone: ['汪！「{wish}」进袋的速度比狗粮还快！🎉']
+    }
+  },
+  latte: {
+    name: '拿铁', emoji: '🦉', tag: '夜班观察员',
+    lines: {
+      before: ['早。夜里的世界我替你看过了，今天会是好日子。'],
+      working: ['观察记录：{today}，稳定增长中。', '秒薪 {sec}，规律的振翅，稳定的进账。', '今天的进度条，比昨天更亮一点。'],
+      lunch: ['午休。猫头鹰的下午，从闭目养神开始。'],
+      overtime: ['夜深了。加班的人，值得一份夜宵 🌙'],
+      after: ['今日观察结束。晚安，好梦。'],
+      weekend: ['周末的树上，风景更好。'],
+      holiday: ['法定假日，整片森林都安静了。'],
+      leave: ['年假 {leave} 天，像储备的松果，该用就用。'],
+      water: ['补充水分，夜里飞行的经验之谈。'],
+      move: ['伸展翅膀，你也伸展一下。'],
+      breakStart: ['休息是高效的一部分，去吧。'],
+      breakEnd: ['精力恢复 37%，继续。'],
+      poke: ['……夜间观察员在岗，请勿打扰。', '戳击已记录。当前 {today}，一切稳定。', '嗯。我在补觉，账我替你盯着。'],
+      pokeMad: ['……你已触发夜枭警告。再戳，明早的班你自己上。'],
+      payday: ['薪资入账确认。今日观测结论：值得庆祝。'],
+      wishDone: ['观测完成：「{wish}」资金到位，可以执行。']
+    }
+  },
+  popo: {
+    name: '划水', emoji: '🐧', tag: '科学划水分析师',
+    lines: {
+      before: ['根据计算，今天 100% 会到账工资（的一部分）。'],
+      working: ['数据更新：{today}，趋势良好。', '每秒 +{sec}，南极冰盖都没这么稳定。', '本月 {days} 个工作日，今日进度正常。', '福利流水：公司月缴 {company}，公积金月进 {fund}，隐藏收入稳定入账。'],
+      lunch: ['午休：系统降频运行，请进食 🐟'],
+      overtime: ['加班模式已检测。建议：完成、保存、下班。'],
+      after: ['今日 KPI：钱到账、人下班，达成 ✅'],
+      weekend: ['周末：冰面滑行模式，启动。'],
+      holiday: ['法定假日。我的分析结论是：休息。'],
+      leave: ['年假余额 {leave} 天，属于已确认资产。'],
+      water: ['喝水提醒。冰块的教训：要液态的。'],
+      move: ['久坐预警。企鹅都知道要走一走。'],
+      breakStart: ['摸鱼时间开始，计时器就位。'],
+      breakEnd: ['休息结束，效率回满。'],
+      poke: ['划水检测：你正在摸鱼，我在陪摸。', '数据同步：当前 {today}，可放心划。', '戳我 = 划水效率 +0.01%（心理作用）。'],
+      pokeMad: ['警告：戳击频率过高，建议保持优雅划水 🐧', '冰面快被你戳裂了。请冷静。'],
+      payday: ['工资到账确认。本月划水成果已落袋 ✅'],
+      wishDone: ['「{wish}」目标达成，划水成功率 100%。']
+    }
+  },
+  tuanzi: {
+    name: '团子', emoji: '🐻', tag: '打盹冠军',
+    lines: {
+      before: ['唔……再眯五分钟就开工……'],
+      working: ['zzz……啊！已经 {today} 了！我盯着呢……', '赚 {day} 的一天，从打个哈欠开始。', '数字在涨，我稍微……闭一下眼。'],
+      lunch: ['午休＝官方批准的小睡，快睡！'],
+      overtime: ['加班的熊，冬天要多睡两个月……别学我，快收工 🌙'],
+      after: ['收工！进入小睡预备姿势 zzz'],
+      weekend: ['周末＝冬眠迷你版，晚安。'],
+      holiday: ['法定假日，正适合窝着 🧸'],
+      leave: ['年假 {leave} 天，都是没睡够的觉，快用！'],
+      water: ['喝水～蜂蜜水更好 🍯'],
+      move: ['起来走走……好吧，熊也要运动。'],
+      breakStart: ['摸鱼？带我一个，我专业的。'],
+      breakEnd: ['呜……这么快。好吧，继续。'],
+      poke: ['唔……戳熊之前，先看看 {today} 到账没有……', '戳着挺软和吧？熊靠冬膘撑起整个工位 🍯', '摸鱼搭子……也是可以被摸的……zzz'],
+      pokeMad: ['嗷！熊被戳醒了！你的今日摸鱼额度被我扣一分钟 🐻', '再戳……我就、我就睡给你看 zzZ'],
+      payday: ['发薪日……熊的蜂蜜预算到账了 🍯'],
+      wishDone: ['「{wish}」攒够啦……熊的蜂蜜罐都没你满得快 🍯']
+    }
+  }
+};
+const curPet = () => PETS[state.pet.id] || PETS.xiaoxin;
+function fill(tpl, extra) {
+  return String(tpl)
+    .replaceAll('{today}', '¥' + fmtC(todayEarnedCents(new Date())))
+    .replaceAll('{minute}', '¥' + perMinRate().toFixed(2))
+    .replaceAll('{sec}', '¥' + perSec().toFixed(4))
+    .replaceAll('{hour}', '¥' + perHourRate().toFixed(2))
+    .replaceAll('{day}', '¥' + dailyPay().toFixed(2))
+    .replaceAll('{days}', String(monthWorkdays()))
+    .replaceAll('{leave}', (leaveCalc(new Date()).totalH / (state.leave.stdHours || 8)).toFixed(1))
+    .replaceAll('{start}', state.settings.start)
+    .replaceAll('{fund}', '¥' + fmt2(fundMonthlyIn(state.settings.salary)))
+    .replaceAll('{company}', '¥' + fmt2(companyMonthly(state.settings.salary)))
+    .replaceAll('{payday}', String(daysToPayday(new Date())))
+    .replaceAll('{wish}', extra || '')
+    .replace('{cost}', extra || '');
+}
+function say(text) {
+  for (const id of ['dockBubble', 'petBubble']) {
+    const b = document.getElementById(id);
+    if (!b) continue;
+    b.textContent = text;
+    b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+  }
+}
+const petLine = (kind, extra) => {
+  const lines = curPet().lines[kind];
+  return lines ? fill(pick(lines), extra) : null;
+};
+
+/* ================= 数字滚动渲染 ================= */
+function makeMoneyRenderer(el) {
+  let prev = '';
+  return text => {
+    if (text === prev) return;
+    if (el.children.length !== text.length) {
+      el.innerHTML = '';
+      for (const ch of text) {
+        const sp = document.createElement('span');
+        sp.className = /\d/.test(ch) ? 'd' : '';
+        sp.textContent = ch;
+        el.appendChild(sp);
+      }
+    } else {
+      for (let i = 0; i < text.length; i++) {
+        const sp = el.children[i];
+        if (sp.textContent !== text[i]) {
+          sp.textContent = text[i];
+          if (sp.classList.contains('d')) {
+            sp.classList.remove('tick'); void sp.offsetWidth; sp.classList.add('tick');
+          }
+        }
+      }
+    }
+    prev = text;
+  };
+}
+const renderTodayMoney = makeMoneyRenderer($('#todayMoney'));
+
+/* ================= 今日页 ================= */
+function renderToday(cents, now, st) {
+  renderTodayMoney(fmtC(cents));
+  $('#todayClock').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+
+  const meta = STATUS_META[st];
+  $('#statusText').textContent = meta.t;
+  $('#statusDot').style.background = meta.c;
+  $('#statusChip').style.color = meta.c;
+
+  $('#rateHour').textContent = '¥' + perHourRate().toFixed(2);
+  $('#rateMin').textContent = '¥' + perMinRate().toFixed(2);
+  $('#rateSec').textContent = '¥' + perSec().toFixed(4);
+  $('#daysNote').textContent = monthWorkdays();
+
+  $$('#modeSwitch button').forEach(b => b.classList.toggle('on', (b.dataset.mode === 'net') === !!state.settings.tax.enabled));
+  const tn = $('#taxNote'), tSal = state.settings.salary, tCfg = state.settings.tax;
+  if (tSal > 0 && (tCfg.enabled || tCfg.coSocialRate > 0 || tCfg.coFundRate > 0)) {
+    tn.style.display = 'block';
+    const lines = [];
+    if (tCfg.enabled)
+      lines.push(`税后计薪中：五险一金 −¥${fmt2(insuranceMonthly(tSal))}/月 · 个税 −¥${fmt2(taxMonthly(tSal))}/月 · 月到手 ¥${fmt2(netSalaryMonthly(tSal))}`);
+    lines.push(`公司为你缴 ¥${fmt2(companyMonthly(tSal))}/月 · 公积金账户每月进账 ¥${fmt2(fundMonthlyIn(tSal))}`);
+    tn.innerHTML = lines.join('<br>');
+  } else tn.style.display = 'none';
+
+  const s = state.settings, stM = toMin(s.start), enM = toMin(s.end), n = nowMinF(now);
+  const span = Math.max(1, enM - stM);
+  const band = $('#tlLunch');
+  if (s.lunch) {
+    const a = clamp(toMin(s.lunchStart), stM, enM), b = clamp(toMin(s.lunchEnd), stM, enM);
+    band.style.display = b > a ? 'block' : 'none';
+    band.style.left = ((a - stM) / span * 100) + '%';
+    band.style.width = ((b - a) / span * 100) + '%';
+    $('#tlLunchLabel').textContent = '午休 ' + s.lunchStart + '-' + s.lunchEnd;
+  } else { band.style.display = 'none'; $('#tlLunchLabel').textContent = '无午休'; }
+  $('#tlStart').textContent = s.start; $('#tlEnd').textContent = s.end;
+
+  let fillEnd;
+  if (n <= stM) fillEnd = stM;
+  else if (!s.lunch) fillEnd = Math.min(n, enM);
+  else {
+    const a = toMin(s.lunchStart), b = toMin(s.lunchEnd);
+    if (n < a) fillEnd = n;
+    else if (n < b) fillEnd = a;
+    else fillEnd = Math.min(n, enM);
+  }
+  const pct = clamp((fillEnd - stM) / span, 0, 1) * 100;
+  $('#tlFill').style.width = pct + '%';
+  $('#tlDot').style.left = pct + '%';
+
+  const diff = (a, b) => { const m = Math.max(0, Math.round(b - a)); return [Math.floor(m / 60), m % 60]; };
+  let nowTxt = '';
+  if (st === 'before') { const [h, m] = diff(n, stM); nowTxt = h > 0 ? `${s.start} 开始计薪 · 还有 ${h} 小时 ${m} 分` : `${s.start} 开始计薪 · 还有 ${m} 分钟`; }
+  else if (st === 'working') { const [h, m] = diff(n, enM); nowTxt = h > 0 ? `距下班还有 ${h} 小时 ${m} 分` : `距下班还有 ${m} 分钟`; }
+  else if (st === 'lunch') { const [h, m] = diff(n, toMin(s.lunchEnd)); nowTxt = `午休到 ${s.lunchEnd}，还有 ${h > 0 ? h + ' 小时 ' : ''}${m} 分`; }
+  else if (st === 'overtime') { const [h, m] = diff(enM, n); nowTxt = `已加班 ${h} 小时 ${pad(m)} 分，心疼你 💛`; }
+  else if (st === 'after') nowTxt = `全天计薪 ¥${dailyPay().toFixed(2)} 已到账 🎉`;
+  else nowTxt = holidayInfo(dayKey(now)) ? '法定节假日 · 好好休息 🏝️' : '周末愉快，周一再涨 💸';
+  $('#tlNow').textContent = nowTxt;
+
+  $('#monthEarned').textContent = '¥' + fmt2(monthEstimateYuan(now));
+  $('#dayTotal').textContent = '¥' + dailyPay().toFixed(2);
+  $('#paydayLeft').textContent = daysToPayday(now);
+}
+function daysToPayday(now) {
+  const p = clamp(state.settings.payday || 1, 1, 31);
+  const dim = (y, m) => new Date(y, m + 1, 0).getDate();
+  let t = new Date(now.getFullYear(), now.getMonth(), Math.min(p, dim(now.getFullYear(), now.getMonth())));
+  if (dayKey(t) === dayKey(now)) return 0;
+  if (t < now) t = new Date(now.getFullYear(), now.getMonth() + 1, Math.min(p, dim(now.getFullYear(), now.getMonth() + 1)));
+  return Math.round((new Date(t.getFullYear(), t.getMonth(), t.getDate()) -
+                     new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+}
+function monthEstimateYuan(now) {                      // 本月已计薪 = 已过工作日×全天工资 + 今日已计薪
+  const y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+  let wd = 0;
+  for (let d = 1; d < today; d++) {
+    if (isWorkday(new Date(y, m, d))) wd++;
+  }
+  return wd * dailyPay() + todayEarnedCents(now) / 100;
+}
+
+/* ================= 年休假 ================= */
+const parseKey = s => { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, m - 1, d); };
+function leaveCalc(now) {
+  const L = state.leave, stdH = L.stdHours || 8;
+  const perDayH = (L.perDay || 0) * (L.perDayUnit === 'day' ? stdH : 1);
+  const baseH = (L.base || 0) * (L.baseUnit === 'day' ? stdH : 1);
+  const b = L.baseDate ? parseKey(L.baseDate) : new Date(now);
+  const y = new Date(now); y.setDate(y.getDate() - 1);
+  let past = 0;                                        // (基准日, 昨天] 的工作日
+  const s = new Date(b); s.setDate(s.getDate() + 1);
+  if (s <= y) past = countWorkdays(s, y);
+  let todayH = 0;                                      // 今日实时按计薪进度攒
+  if (dayKey(now) !== dayKey(b) && isWorkday(now))
+    todayH = perDayH * (paidElapsedMin(now) / Math.max(1, paidH() * 60));
+  const usedH = L.log.reduce((a, x) => a + x.amount, 0);
+  return { perDayH, baseH, pastH: past * perDayH, todayH, usedH, past,
+           totalH: baseH + past * perDayH + todayH - usedH, stdH };
+}
+
+setInterval(() => {
+  const st = statusOf(new Date());
+  if ((st !== 'working' && st !== 'overtime') || perSec() <= 0) return;
+  const f = document.createElement('span');
+  f.className = 'floater';
+  f.textContent = '+¥' + perSec().toFixed(3);
+  f.style.left = (20 + Math.random() * 60) + '%';
+  f.style.top = (34 + Math.random() * 16) + '%';
+  f.addEventListener('animationend', () => f.remove());
+  $('#floaters').appendChild(f);
+}, 1000);
+
+/* ================= 心愿单 ================= */
+function timeFor(price) {
+  const hours = price / perHourRate();
+  let H = Math.floor(hours), M = Math.round((hours - H) * 60);
+  if (M === 60) { H++; M = 0; }
+  const days = paidH() > 0 ? hours / paidH() : 0;
+  return { H, M, days, hours };
+}
+function renderConvert() {
+  const price = parseFloat($('#wishPrice').value);
+  const box = $('#convertResult');
+  if (!price || price <= 0 || perHourRate() <= 0) {
+    box.innerHTML = '输入价格，看看它值多少个工作日。'; return;
+  }
+  const t = timeFor(price);
+  box.innerHTML = `<b>¥${fmt2(price)}</b> ≈ <b>${t.H} 小时 ${pad(t.M)} 分</b> ≈ <b>${t.days.toFixed(2)} 个工作日</b><br>“我愿意拿这 ${t.days < 1 ? '不到一天' : t.days.toFixed(1) + ' 天'}的工作时间换它吗？”`;
+}
+function renderWish() {
+  const list = $('#wishList');
+  if (!state.wishlist.length) {
+    list.innerHTML = '<div class="empty">还没有心愿，先想想现在最想要什么 ✨</div>'; return;
+  }
+  list.innerHTML = '';
+  for (const it of state.wishlist) {
+    const accrued = clamp((state.lifetimeEarned - it.baseline) / 100, 0, it.price);
+    const pct = it.price > 0 ? accrued / it.price * 100 : 100;
+    const t = timeFor(it.price);
+    const done = accrued >= it.price - 0.005;
+    const remainDays = done ? 0 : (it.price - accrued) / Math.max(0.01, dailyPay());
+    const div = document.createElement('div');
+    div.className = 'wish-item';
+    div.innerHTML = `
+      <div class="wi-head"><b></b><span class="wi-price">¥${fmt2(it.price)}</span></div>
+      <div class="wi-sub">≈ ${t.H} 小时 ${pad(t.M)} 分 · ${t.days.toFixed(2)} 个工作日</div>
+      <div class="wi-bar"><i style="width:${clamp(pct, 0, 100).toFixed(1)}%"></i></div>
+      <div class="wi-foot">
+        <span>${done ? '攒够啦，去买吧 🎉' : '已攒 ¥' + fmt2(accrued) + ' · 还需约 ' + remainDays.toFixed(1) + ' 个工作日'}</span>
+        <button class="wi-del" data-del="${it.id}">删除</button>
+      </div>`;
+    div.querySelector('b').textContent = it.name;
+    list.appendChild(div);
+  }
+  $$('#wishList [data-del]').forEach(btn => btn.onclick = () => {
+    state.wishlist = state.wishlist.filter(w => String(w.id) !== btn.dataset.del);
+    markDirty(); save(); renderWish();
+  });
+}
+$('#wishPrice').addEventListener('input', renderConvert);
+$('#wishAdd').addEventListener('click', () => {
+  const name = $('#wishName').value.trim() || '小小的心愿';
+  const price = parseFloat($('#wishPrice').value);
+  if (!price || price <= 0) { say('先填个价格嘛，我才能帮你换算呀～'); return; }
+  state.wishlist.unshift({ id: Date.now(), name, price, baseline: state.lifetimeEarned, createdAt: Date.now() });
+  markDirty(); save(); renderWish();
+  $('#wishName').value = ''; $('#wishPrice').value = ''; renderConvert();
+  const t = timeFor(price);
+  say(`已放进心愿清单！${t.H} 小时 ${pad(t.M)} 分，一起攒吧 ✨`);
+});
+
+/* ================= 摸鱼 ================= */
+const fmtDur = sec => sec >= 60 ? Math.round(sec / 60) + ' 分钟' : Math.round(sec) + ' 秒';
+const fmtHMS = ts => { const d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
+function renderBreaks() {
+  const totalSec = state.breaks.reduce((a, b) => a + (b.e - b.s), 0) / 1000;
+  const totalCost = totalSec * perSec();
+  $('#breakTotal').textContent = state.breaks.length
+    ? `· 合计 ${fmtDur(totalSec)} ≈ ¥${totalCost.toFixed(2)}` : '';
+  const list = $('#breakList');
+  if (!state.breaks.length && !state.activeBreak) {
+    list.innerHTML = '<div class="empty">今天还没摸鱼，辛苦啦（也不知道该不该夸 🤔）</div>'; return;
+  }
+  list.innerHTML = '';
+  for (const b of [...state.breaks].reverse()) {
+    const sec = (b.e - b.s) / 1000;
+    const cost = sec * perSec();
+    const div = document.createElement('div');
+    div.className = 'break-item';
+    div.innerHTML = `<div><div>${fmtHMS(b.s)} – ${fmtHMS(b.e)}</div>
+      <div class="t">${fmtDur(sec)}</div></div><b>≈ ¥${cost.toFixed(2)}</b>`;
+    list.appendChild(div);
+  }
+}
+function renderBreakLive(now) {
+  const el = (now - state.activeBreak) / 1000;
+  $('#breakTimer').textContent = pad(Math.floor(el / 60)) + ':' + pad(Math.floor(el % 60));
+  $('#breakCost').textContent = '¥' + (el * perSec()).toFixed(2);
+}
+$('#breakBtn').addEventListener('click', () => {
+  if (!state.activeBreak) {
+    state.activeBreak = Date.now();
+    $('#breakBtn').classList.add('on');
+    $('#breakBtn').innerHTML = '结束<br>摸鱼';
+    say(petLine('breakStart'));
+  } else {
+    const cost = ((Date.now() - state.activeBreak) / 1000 * perSec()).toFixed(2);
+    state.breaks.push({ s: state.activeBreak, e: Date.now() });
+    state.activeBreak = null;
+    $('#breakBtn').classList.remove('on');
+    $('#breakBtn').innerHTML = '开始<br>摸鱼';
+    $('#breakTimer').textContent = '00:00';
+    $('#breakCost').textContent = '¥0.00';
+    say(petLine('breakEnd', '¥' + cost));
+    renderBreaks();
+  }
+  markDirty(); save();
+});
+
+/* ================= 年假页 ================= */
+function renderLeave(now) {
+  const c = leaveCalc(now), std = c.stdH;
+  const daysEl = $('#leaveDays');
+  daysEl.textContent = (c.totalH / std).toFixed(2);
+  daysEl.style.color = c.totalH < 0 ? 'var(--red)' : '';
+  $('#leaveHours').textContent = c.totalH.toFixed(1);
+  $('#leaveMoney').textContent = '¥' + fmt2(c.totalH * perHourRate());
+  $('#leaveToday').textContent = '+' + c.todayH.toFixed(2);
+  $('#leavePer').textContent = c.perDayH.toFixed(2);
+  $('#leaveStat').textContent = (c.totalH / std).toFixed(1);
+}
+function renderLeaveLog() {
+  const box = $('#leaveLog');
+  const L = state.leave;
+  if (!L.log.length) { box.innerHTML = '<div class="empty">还没请过年假，攒着也是一种幸福 ✨</div>'; return; }
+  box.innerHTML = '';
+  const std = L.stdHours || 8;
+  for (const it of [...L.log].reverse()) {
+    const d = new Date(it.ts);
+    const div = document.createElement('div');
+    div.className = 'break-item';
+    div.innerHTML = `<div><div>${d.getMonth() + 1}月${d.getDate()}日 · 请了 ${(it.amount / std).toFixed(2)} 天</div>
+      <div class="t">${it.note || '年假'} · ${it.amount.toFixed(1)} 小时</div></div>
+      <button class="wi-del" data-lid="${it.id}">删除</button>`;
+    box.appendChild(div);
+  }
+  $$('#leaveLog [data-lid]').forEach(btn => btn.onclick = () => {
+    state.leave.log = state.leave.log.filter(x => String(x.id) !== btn.dataset.lid);
+    markDirty(); save(); renderLeaveLog(); renderLeave(new Date());
+  });
+}
+$('#leaveUseBtn').addEventListener('click', () => {
+  const amt = parseFloat($('#leaveUseAmt').value);
+  if (!amt || amt <= 0) { say('请输入要请的时长呀～'); return; }
+  const unit = $('#leaveUseUnit').value, std = state.leave.stdHours || 8;
+  const hours = amt * (unit === 'day' ? std : 1);
+  state.leave.log.unshift({ id: Date.now(), ts: Date.now(), amount: hours, note: $('#leaveUseNote').value.trim() });
+  markDirty(); save(); renderLeaveLog(); renderLeave(new Date());
+  $('#leaveUseAmt').value = ''; $('#leaveUseNote').value = '';
+  const c = leaveCalc(new Date());
+  say(c.totalH < 0 ? '用到负数啦，老板要找你谈心了 😅' : (petLine('leave') || '已记录！好好休息 🌴'));
+});
+function renderLeaveSettings() {
+  const L = state.leave;
+  $('#leavePerDay').value = L.perDay; $('#leavePerUnit').value = L.perDayUnit;
+  $('#leaveBase').value = L.base; $('#leaveBaseUnit').value = L.baseUnit;
+  $('#leaveStd').value = L.stdHours;
+  const now = new Date();
+  $('#leaveBaseNote').textContent = L.baseDate
+    ? `余额基准日：${L.baseDate}（当天不再重复累计，次日起每个工作日自动 +${((L.perDay || 0) * (L.perDayUnit === 'day' ? L.stdHours : 1)).toFixed(2)} 小时）`
+    : '首次修改“当前余额”时，会把今天记为基准日，之后自动往上攒。';
+}
+$('#leavePerDay').addEventListener('change', e => {
+  state.leave.perDay = clamp(parseFloat(e.target.value) || 0, 0, 24);
+  e.target.value = state.leave.perDay; markDirty(); save(); renderLeaveSettings(); renderLeave(new Date());
+});
+$('#leavePerUnit').addEventListener('change', e => { state.leave.perDayUnit = e.target.value; markDirty(); save(); renderLeaveSettings(); renderLeave(new Date()); });
+$('#leaveBase').addEventListener('change', e => {
+  state.leave.base = clamp(parseFloat(e.target.value) || 0, 0, 8760);
+  state.leave.baseDate = dayKey(new Date());           // 以今天为基准日重新起算
+  markDirty(); save(); renderLeaveSettings(); renderLeave(new Date());
+});
+$('#leaveBaseUnit').addEventListener('change', e => {
+  state.leave.baseUnit = e.target.value;
+  state.leave.baseDate = dayKey(new Date());
+  markDirty(); save(); renderLeaveSettings(); renderLeave(new Date());
+});
+$('#leaveStd').addEventListener('change', e => {
+  state.leave.stdHours = clamp(parseFloat(e.target.value) || 8, 1, 24);
+  e.target.value = state.leave.stdHours; markDirty(); save(); renderLeaveSettings(); renderLeave(new Date());
+});
+
+/* ================= 搭子页 ================= */
+const PET_ORDER = Object.keys(PETS);
+function renderPetUI(scrollToActive) {
+  const p = curPet();
+  $('#dockPet').textContent = p.emoji;
+  $('#petBig').textContent = p.emoji;
+  $('#petName').textContent = p.name;
+  $('#petDesc').textContent = p.tag;
+  const grid = $('#petGrid');
+  grid.innerHTML = '';
+  for (const key of PET_ORDER) {
+    const pet = PETS[key];
+    const div = document.createElement('div');
+    div.className = 'pet-option' + (state.pet.id === key ? ' sel' : '');
+    div.innerHTML = `<span class="pe">${pet.emoji}</span><div class="pn">${pet.name}</div><div class="pd">${pet.tag}</div>`;
+    div.onclick = () => selectPet(key, PET_ORDER.indexOf(key) >= PET_ORDER.indexOf(state.pet.id) ? 1 : -1);
+    grid.appendChild(div);
+  }
+  $('#petReport').value = String(state.pet.reportMin);
+  $('#petWater').checked = state.pet.water;
+  $('#petMove').checked = state.pet.move;
+  $('#petOvertime').checked = state.pet.overtimeCare;
+  if (scrollToActive) {
+    const act = grid.querySelector('.sel');
+    if (act) act.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
+}
+function selectPet(key, dir) {
+  if (!PETS[key] || key === state.pet.id) { renderPetUI(true); return; }
+  state.pet.id = key; markDirty(); save();
+  const big = $('#petBig');
+  big.classList.remove('swap-l', 'swap-r', 'hop'); void big.offsetWidth;
+  big.classList.add(dir >= 0 ? 'swap-r' : 'swap-l');
+  say(petLine(statusOf(new Date())) || (PETS[key].name + ' 上线啦～'));
+  renderPetUI(true);
+}
+$('#petPrev').addEventListener('click', () => {
+  const i = PET_ORDER.indexOf(state.pet.id);
+  selectPet(PET_ORDER[(i - 1 + PET_ORDER.length) % PET_ORDER.length], -1);
+});
+$('#petNext').addEventListener('click', () => {
+  const i = PET_ORDER.indexOf(state.pet.id);
+  selectPet(PET_ORDER[(i + 1) % PET_ORDER.length], 1);
+});
+let pokeCount = 0, lastPokeAt = 0;
+function poke() {                                     // 戳一戳：连戳 5 下桌宠会翻脸
+  const t = Date.now();
+  pokeCount = (t - lastPokeAt < 2500) ? pokeCount + 1 : 1;
+  lastPokeAt = t;
+  if (pokeCount >= 5) { pokeCount = 0; say(petLine('pokeMad') || '戳累了吧，歇会儿 😌'); }
+  else say(petLine('poke') || petLine(statusOf(new Date())) || '我在呢');
+}
+$('#petBig').addEventListener('click', () => {
+  const big = $('#petBig'); big.classList.remove('hop'); void big.offsetWidth; big.classList.add('hop');
+  poke();
+});
+$('#petDock').addEventListener('click', () => {
+  const e = $('#dockPet'); e.classList.remove('hop'); void e.offsetWidth; e.classList.add('hop');
+  poke();
+});
+$('#petReport').addEventListener('change', e => { state.pet.reportMin = parseInt(e.target.value, 10) || 15; markDirty(); save(); });
+$('#petWater').addEventListener('change', e => { state.pet.water = e.target.checked; markDirty(); save(); });
+$('#petMove').addEventListener('change', e => { state.pet.move = e.target.checked; markDirty(); save(); });
+$('#petOvertime').addEventListener('change', e => { state.pet.overtimeCare = e.target.checked; markDirty(); save(); });
+
+let lastReportAt = Date.now(), lastWaterAt = Date.now(), lastMoveAt = Date.now();
+setInterval(() => {
+  const st = statusOf(new Date());
+  if (st !== 'working' && st !== 'overtime') return;
+  const t = Date.now();
+  if (state.pet.water && t - lastWaterAt > 45 * 60000) { lastWaterAt = t; return say(petLine('water')); }
+  if (state.pet.move && t - lastMoveAt > 60 * 60000) { lastMoveAt = t; return say(petLine('move')); }
+  if (t - lastReportAt > state.pet.reportMin * 60000) { lastReportAt = t; return say(petLine(st)); }
+}, 5000);
+function onStatusChange(st) {
+  lastReportAt = lastWaterAt = lastMoveAt = Date.now();
+  if ((st === 'overtime' || st === 'after') && !state.pet.overtimeCare) return;
+  const line = petLine(st);
+  if (line) say(line);
+}
+
+/* ================= 设置页 ================= */
+function renderSettings() {
+  const s = state.settings;
+  $('#setSalary').value = s.salary;
+  $('#setDays').value = monthWorkdays();
+  $('#setPayday').value = s.payday;
+  $('#setStart').value = s.start; $('#setEnd').value = s.end;
+  $('#setLunch').checked = s.lunch; $('#setLunchStart').value = s.lunchStart; $('#setLunchEnd').value = s.lunchEnd;
+  $('#setOvertime').checked = s.overtime;
+  const t = s.tax;
+  $('#taxOn').checked = t.enabled;
+  $('#taxFund').value = t.fundRate;
+  $('#taxSocial').value = t.socialRate;
+  $('#taxThreshold').value = t.threshold;
+  $('#taxCap').value = t.baseCap;
+  $('#taxFloor').value = t.baseFloor || '';
+  const pv = $('#taxProv'), cv = $('#taxCity');
+  if (!pv.options.length) {
+    pv.append(new Option('自定义 · 手动填写', 'custom'));
+    Object.keys(PROV).forEach(p => pv.append(new Option(p, p)));
+  }
+  pv.value = PROV[t.regionProv] ? t.regionProv : 'custom';
+  cv.innerHTML = '';
+  cv.append(new Option('自定义 · 手动填写', 'custom'));
+  (PROV_CITIES[t.regionProv] || []).forEach(cn => cv.append(new Option(cn, cn)));
+  cv.value = t.regionCity;
+  if (cv.value !== t.regionCity) cv.value = 'custom';
+  $('#taxTier').value = TIER_NAMES[t.baseTier] ? t.baseTier : 'full';
+  $('#taxTierCustom').value = t.customBase || '';
+  $('#taxTierCustomField').classList.toggle('hidden', $('#taxTier').value !== 'custom');
+  $('#taxCoSocial').value = t.coSocialRate;
+  $('#taxCoFund').value = t.coFundRate;
+  $('#taxPreview').innerHTML = s.salary > 0
+    ? `按月薪 ¥${fmt2(s.salary)} 估算：缴费基数 ¥${fmt2(insBaseMonthly(s.salary))}（${TIER_NAMES[$('#taxTier').value]}${t.regionCity !== 'custom' ? ' · ' + t.regionCity + '参考' : (t.regionProv !== 'custom' ? ' · ' + t.regionProv + '参考' : '')}）<br>` +
+      `五险一金 −¥${fmt2(insuranceMonthly(s.salary))} · 个税 −¥${fmt2(taxMonthly(s.salary))} · 月到手 ¥${fmt2(netSalaryMonthly(s.salary))}（约为税前的 ${(netSalaryMonthly(s.salary) / s.salary * 100).toFixed(1)}%）<br>` +
+      `公司为你缴 ¥${fmt2(companyMonthly(s.salary))}/月 = 社保 ¥${fmt2(insBaseMonthly(s.salary) * t.coSocialRate / 100)} + 公积金 ¥${fmt2(insBaseMonthly(s.salary) * t.coFundRate / 100)} · 公积金账户月进账 ¥${fmt2(fundMonthlyIn(s.salary))}`
+    : '填写月薪后，这里显示到手与公司缴纳估算。';
+  const now = new Date();
+  const bd = monthBreakdown(now);
+  $('#daysAuto').textContent = bd.hasData
+    ? `${now.getMonth() + 1} 月：周一至周五 ${bd.weekdays} 天 − 法定节假日 ${bd.hol} 天（${bd.names.join('、') || '无'}） + 调休上班 ${bd.makeup} 天 = ${bd.net} 个工作日。特殊公司安排可手动微调，下月自动重算。`
+    : `${now.getMonth() + 1} 月暂无节假日数据（明年安排公布后联网自动更新），按周一至周五 ${bd.weekdays} 天统计，可手动微调。`;
+  const cy = now.getFullYear(), cr = (state.cal || {})[String(cy)];
+  $('#calStatus').textContent = cr && cr.fetchedAt
+    ? `节假日数据：已在线更新（holiday-cn · ${new Date(cr.fetchedAt).toLocaleDateString('zh-CN')}），与内置数据自动合并`
+    : '节假日数据：内置 2026 离线可用，联网时自动更新';
+}
+function bindSetting(id, fn) {
+  $(id).addEventListener('change', e => { fn(e.target); markDirty(); save(); renderConvert(); renderWish(); renderBreaks(); uiTick(); });
+}
+bindSetting('#setSalary', el => state.settings.salary = clamp(parseFloat(el.value) || 0, 0, 100000000));
+bindSetting('#setDays', el => {
+  const v = parseInt(el.value, 10);
+  if (v >= 1 && v <= 31) { state.settings.daysOverride = v; state.settings.daysMonthKey = monthKey(new Date()); }
+  else { state.settings.daysOverride = null; el.value = monthWorkdays(); }
+});
+bindSetting('#setPayday', el => state.settings.payday = clamp(parseInt(el.value, 10) || 10, 1, 31));
+bindSetting('#setStart', el => state.settings.start = el.value || '09:00');
+bindSetting('#setEnd', el => state.settings.end = el.value || '18:00');
+bindSetting('#setLunch', el => state.settings.lunch = el.checked);
+bindSetting('#setLunchStart', el => state.settings.lunchStart = el.value || '12:00');
+bindSetting('#setLunchEnd', el => state.settings.lunchEnd = el.value || '13:00');
+bindSetting('#setOvertime', el => state.settings.overtime = el.checked);
+const bindTax = (id, fn) => $(id).addEventListener('change', e => {
+  fn(e.target); markDirty(); save(); renderSettings(); renderConvert(); renderWish(); renderBreaks(); uiTick();
+});
+bindTax('#taxOn', el => state.settings.tax.enabled = el.checked);
+bindTax('#taxFund', el => { state.settings.tax.regionProv = 'custom'; state.settings.tax.regionCity = 'custom'; state.settings.tax.fundRate = clamp(parseFloat(el.value) || 0, 0, 12); el.value = state.settings.tax.fundRate; });
+bindTax('#taxSocial', el => { state.settings.tax.regionProv = 'custom'; state.settings.tax.regionCity = 'custom'; state.settings.tax.socialRate = clamp(parseFloat(el.value) || 0, 0, 30); el.value = state.settings.tax.socialRate; });
+bindTax('#taxThreshold', el => { state.settings.tax.threshold = clamp(parseFloat(el.value) || 0, 0, 1000000); el.value = state.settings.tax.threshold; });
+bindTax('#taxProv', el => {
+  const t = state.settings.tax;
+  t.regionProv = el.value;
+  t.regionCity = el.value === 'custom' ? 'custom' : PROV_CITIES[el.value][0];
+  applyRegion(t);
+});
+bindTax('#taxCity', el => {
+  const t = state.settings.tax;
+  if (el.value === 'custom') { t.regionProv = 'custom'; t.regionCity = 'custom'; }
+  else { t.regionCity = el.value; applyRegion(t); }
+});
+bindTax('#taxCap', el => { const t = state.settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.baseCap = clamp(parseFloat(el.value) || 0, 0, 10000000); el.value = t.baseCap; });
+bindTax('#taxFloor', el => { const t = state.settings.tax; t.region = 'custom'; t.baseFloor = clamp(parseFloat(el.value) || 0, 0, 10000000); el.value = t.baseFloor; });
+bindTax('#taxTier', el => { state.settings.tax.baseTier = el.value; });
+bindTax('#taxTierCustom', el => { state.settings.tax.customBase = clamp(parseFloat(el.value) || 0, 0, 10000000); el.value = state.settings.tax.customBase; });
+bindTax('#taxCoSocial', el => { state.settings.tax.regionProv = 'custom'; state.settings.tax.regionCity = 'custom'; state.settings.tax.coSocialRate = clamp(parseFloat(el.value) || 0, 0, 30); el.value = state.settings.tax.coSocialRate; });
+bindTax('#taxCoFund', el => { state.settings.tax.regionProv = 'custom'; state.settings.tax.regionCity = 'custom'; state.settings.tax.coFundRate = clamp(parseFloat(el.value) || 0, 0, 12); el.value = state.settings.tax.coFundRate; });
+
+/* 税前/税后 快捷切换 */
+$$('#modeSwitch button').forEach(b => b.addEventListener('click', () => {
+  state.settings.tax.enabled = b.dataset.mode === 'net';
+  markDirty(); save(); renderSettings(); uiTick();
+}));
+
+$('#btnCal').addEventListener('click', () => refreshCal(false));
+$('#btnExport').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'salarydance-backup-' + dayKey(new Date()) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+$('#btnImport').addEventListener('click', () => $('#fileImport').click());
+$('#fileImport').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (!data || !data.settings) throw new Error('bad');
+      suppressSave = true;
+      localStorage.setItem(LS_KEY, JSON.stringify(deepMerge(DEFAULTS, data)));
+      location.reload();
+    } catch (err) { alert('导入失败：文件格式不对 😢'); }
+  };
+  r.readAsText(file);
+});
+
+/* ================= Tab 切换 ================= */
+function switchTab(name) {
+  $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.page === name));
+  $$('.page').forEach(p => p.classList.toggle('hidden', p.id !== 'page-' + name));
+  const page = $('#page-' + name);
+  page.style.animation = 'none'; void page.offsetWidth; page.style.animation = '';
+  $('#main').scrollTop = 0;
+}
+$$('.tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.page)));
+$('#gearBtn').addEventListener('click', () => switchTab('set'));
+
+/* ================= 主循环 ================= */
+function rollDates(now) {
+  const dk = dayKey(now), mk = monthKey(now);
+  if (state.todayKey !== dk) {
+    state.todayKey = dk; state.breaks = []; state.activeBreak = null; state.savedTodayEarned = 0;
+    $('#breakBtn').classList.remove('on'); $('#breakBtn').innerHTML = '开始<br>摸鱼';
+    renderBreaks();
+  }
+  if (state.monthKey !== mk) {
+    state.monthKey = mk; state.monthEarned = 0;
+    state.settings.daysOverride = null;                 // 跨月回到自动统计
+    renderSettings();
+    refreshCal(true);                                  // 跨年时自动拉取新年份节假日
+  }
+  markDirty();
+}
+let lastStatus = null;
+function uiTick() {
+  const now = new Date();
+  rollDates(now);
+  if (daysToPayday(now) === 0 && state.paydaySaidKey !== dayKey(now)) {
+    state.paydaySaidKey = dayKey(now); markDirty();
+    say(petLine('payday') || '今天是发薪日，快乐 🎉');
+  }
+  const st = statusOf(now);
+  if (st !== lastStatus) { if (lastStatus !== null) onStatusChange(st); lastStatus = st; }
+  const cents = todayEarnedCents(now);
+  if (cents > state.savedTodayEarned) {
+    const delta = cents - state.savedTodayEarned;
+    state.lifetimeEarned += delta; state.monthEarned += delta;
+    state.savedTodayEarned = cents; markDirty();
+  } else if (cents < state.savedTodayEarned) {
+    state.savedTodayEarned = cents;
+  }
+  for (const w of state.wishlist) {                   // 心愿攒够 → 桌宠庆祝一次
+    if (!w.cheered && w.price > 0 && (state.lifetimeEarned - w.baseline) / 100 >= w.price - 0.005) {
+      w.cheered = true; markDirty();
+      say(petLine('wishDone', w.name) || `「${w.name}」攒够啦，去买吧 🎉`);
+    }
+  }
+  renderToday(cents, now, st);
+  renderLeave(now);
+  if (state.activeBreak) renderBreakLive(now);
+}
+setInterval(uiTick, 200);
+setInterval(() => { if (dirty) save(); }, 1500);
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+window.addEventListener('beforeunload', save);
+
+/* ================= 启动 ================= */
+(function init() {
+  const now = new Date();
+  try {
+    const cached = JSON.parse(localStorage.getItem(REGIONS_CACHE_KEY) || 'null');
+    if (cached) applyRegionsData(cached);
+  } catch (e) {}
+  const oldDay = state.todayKey, oldSaved = state.savedTodayEarned;
+  rollDates(now);
+  const cur = todayEarnedCents(now);
+  if (oldDay === dayKey(now) && cur > oldSaved) {
+    state.lifetimeEarned += cur - oldSaved;
+    state.monthEarned += cur - oldSaved;
+  }
+  state.savedTodayEarned = Math.max(state.savedTodayEarned, cur);
+
+  renderSettings();
+  renderPetUI();
+  renderConvert();
+  renderWish();
+  renderBreaks();
+  renderLeaveLog();
+  renderLeaveSettings();
+  renderLeave(now);
+  if (state.activeBreak) { $('#breakBtn').classList.add('on'); $('#breakBtn').innerHTML = '结束<br>摸鱼'; }
+
+  lastStatus = statusOf(now);
+  const st = lastStatus;
+  if ((st === 'overtime' || st === 'after') && !state.pet.overtimeCare) {
+    say('我在呢，随时叫我 ₍˄·͈༝·͈˄₎◞̑');
+  } else {
+    say(petLine(st) || '打开摸薪，今天也要好好摸、好好涨呀 ✨');
+  }
+  uiTick();
+  refreshCal(true);                                   // 启动静默更新节假日数据
+  refreshRegions(true);                               // 启动静默更新地区参数
+})();
+
+/* 供调试/自动化验收使用的只读钩子 */
+window.__md = { monthWorkdays, monthBreakdown, isWorkday, statusOf, holidayInfo, leaveCalc, paidElapsedMin, refreshCal, state, CAL: () => CAL };
+})();
+</script>
+</body>
+</html>

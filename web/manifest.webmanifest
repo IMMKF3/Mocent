@@ -1,0 +1,17 @@
+{
+  "name": "摸薪 Mocent",
+  "short_name": "摸薪",
+  "description": "摸鱼的时候，工资也在涨：实时计薪 · 法定节假日 · 税后计算 · 公司缴纳档位 · 心愿单 · 摸鱼计时 · 年假管理",
+  "lang": "zh-CN",
+  "start_url": "./SalaryDance.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f1e6",
+  "theme_color": "#f7f1e6",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
