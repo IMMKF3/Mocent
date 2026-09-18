@@ -14,8 +14,6 @@ import android.content.pm.PackageManager
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.net.Uri
 import android.os.Build
@@ -564,18 +562,15 @@ class MainActivity : Activity() {
 /** 底栏背景：圆角矩形 + 顶中弧形缺口（供凸起圆盘嵌入，CLEAR 抠洞后透出下层） */
 class NotchTabbarView(context: android.content.Context) : LinearLayout(context) {
     private val barPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#fffdf9") }
-    private val holePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
-    }
+    private val notchPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#f3e3cd") }
 
     init {
         setWillNotDraw(false)
-        setLayerType(View.LAYER_TYPE_SOFTWARE, null)
     }
 
     override fun onDraw(canvas: Canvas) {
         val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
         canvas.drawRect(rect, barPaint)
-        canvas.drawCircle(width / 2f, 0f, Ui.dp(context, 34).toFloat(), holePaint)
+        canvas.drawCircle(width / 2f, 0f, Ui.dp(context, 34).toFloat(), notchPaint)
     }
 }
