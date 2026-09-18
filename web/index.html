@@ -244,7 +244,7 @@
     box-shadow:0 10px 26px rgba(60,40,20,.32)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-  .save-bar{display:none;position:absolute;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:40;
+  .save-bar{display:none;position:sticky;bottom:12px;z-index:40;margin:0 12px 12px;
     background:rgba(255,253,249,.97);backdrop-filter:blur(8px);border:1.5px solid #f3ddc2;border-radius:16px;
     padding:10px 12px 10px 16px;align-items:center;gap:8px;box-shadow:0 10px 26px rgba(130,95,45,.22)}
   .save-bar.show{display:flex}
@@ -462,7 +462,13 @@
         </div>
       </details>
       <p class="footer-note">数据保存在本机浏览器，不会上传 · 仅供个人参考 💛</p>
-    </section>
+    
+  <div class="save-bar" id="saveBar">
+    <span class="sb-txt">✏️ 有未保存的更改，保存后才会生效</span>
+    <button class="btn ghost" id="btnRevert">放弃</button>
+    <button class="btn" id="btnSave">保存</button>
+  </div>
+</section>
 
   </main>
 
@@ -473,12 +479,6 @@
     <button class="tab" data-page="leave"><span class="ti">🌴</span>年假</button>
     <button class="tab" data-page="set"><span class="ti">⚙️</span>设置</button>
   </nav>
-
-  <div class="save-bar" id="saveBar">
-    <span class="sb-txt">✏️ 有未保存的更改，保存后才会生效</span>
-    <button class="btn ghost" id="btnRevert">放弃</button>
-    <button class="btn" id="btnSave">保存</button>
-  </div>
 </div>
 
 <script>
