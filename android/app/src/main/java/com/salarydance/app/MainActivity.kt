@@ -266,12 +266,12 @@ class MainActivity : Activity() {
             text = "Mocent"
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { marginStart = Ui.dp(c, 10) } })
+            ).apply { marginStart = Ui.dp(c, 4) } })
         topbar.addView(Ui.text(c, 12, Ui.SUB, true).apply {
             text = "摸着摸着就涨薪"; letterSpacing = 0.08f
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { marginStart = Ui.dp(c, 10) } })
+            ).apply { marginStart = Ui.dp(c, 6) } })
         topbar.addView(View(c), LinearLayout.LayoutParams(0, 0, 1f))
         val gear = Ui.text(c, 17, Ui.INK).apply {
             text = "⚙️"
