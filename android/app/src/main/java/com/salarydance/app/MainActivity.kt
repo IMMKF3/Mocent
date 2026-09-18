@@ -302,7 +302,7 @@ class MainActivity : Activity() {
         // 底栏高度随屏幕自适应：约占屏高 8.5%，限制 54~88dp，避免矮屏拥挤/高屏空旷
         val screenH = resources.displayMetrics.heightPixels
         val navInset = insetsBottom().coerceAtMost(Ui.dp(c, 24))
-        val barH = (screenH * 0.085f).toInt().coerceIn(Ui.dp(c, 54), Ui.dp(c, 88))
+        val barH = (screenH * 0.068f).toInt().coerceIn(Ui.dp(c, 54), Ui.dp(c, 88))
         val tabbar = LinearLayout(c).apply {
             orientation = LinearLayout.HORIZONTAL
             background = Ui.roundBg(Color.parseColor("#fffdf9"), 0f)
@@ -322,7 +322,7 @@ class MainActivity : Activity() {
             if (name == "rest") {
                 // 闲鱼式中央凸起圆钮：56dp 圆盘仅放 🐟 图标，上浮嵌入底栏缺口
                 cell.clipChildren = false
-                e = Ui.text(c, 26, Color.WHITE).apply {
+                e = Ui.text(c, 28, Color.WHITE).apply {
                     gravity = Gravity.CENTER; text = emoji
                     translationY = -Ui.dp(c, 2).toFloat()   // 视觉居中微调
                 }
@@ -334,10 +334,10 @@ class MainActivity : Activity() {
                     background = Ui.ovalGradBg(Color.parseColor("#ffc06e"), Ui.BRAND).apply {
                         setStroke(Ui.dp(c, 4), Color.parseColor("#fffdf9"))   // 奶油白描边圈
                     }
-                    translationY = -Ui.dp(c, 26).toFloat()   // 一半凸出底栏（对齐网页版）
+                    translationY = -Ui.dp(c, 40).toFloat()  // 圆心落在栏顶：一半凸出
                 }
                 disc.addView(e)
-                disc.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 64), Ui.dp(c, 64))
+                disc.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 72), Ui.dp(c, 72))
                 restDisc = disc
                 cell.addView(disc)
             } else {
