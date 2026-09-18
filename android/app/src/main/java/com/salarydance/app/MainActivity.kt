@@ -12,6 +12,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -315,7 +316,7 @@ class MainActivity : Activity() {
             if (name == "rest") {
                 // 闲鱼式中央凸起圆钮：56dp 圆盘仅放 🐟 图标，上浮嵌入底栏缺口
                 cell.clipChildren = false
-                e = Ui.text(c, 24, Color.WHITE).apply {
+                e = Ui.text(c, 26, Color.WHITE).apply {
                     gravity = Gravity.CENTER; text = emoji
                     translationY = -Ui.dp(c, 2).toFloat()   // 视觉居中微调
                 }
@@ -324,11 +325,13 @@ class MainActivity : Activity() {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER
                     clipChildren = false
-                    background = Ui.ovalGradBg(Color.parseColor("#ffc06e"), Ui.BRAND)
-                    translationY = -Ui.dp(c, 12).toFloat()
+                    background = Ui.ovalGradBg(Color.parseColor("#ffc06e"), Ui.BRAND).apply {
+                        setStroke(Ui.dp(c, 4), Color.parseColor("#fffdf9"))   // 奶油白描边圈
+                    }
+                    translationY = -Ui.dp(c, 26).toFloat()   // 一半凸出底栏（对齐网页版）
                 }
                 disc.addView(e)
-                disc.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 56), Ui.dp(c, 56))
+                disc.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 64), Ui.dp(c, 64))
                 restDisc = disc
                 cell.addView(disc)
             } else {
@@ -518,20 +521,27 @@ class MainActivity : Activity() {
         if (active == lastRestActive) return
         lastRestActive = active
         restDisc?.let { disc ->
-            disc.background = if (active) Ui.ovalGradBg(Color.parseColor("#f87171"), Color.parseColor("#dc2626"))
-            else Ui.ovalGradBg(Color.parseColor("#ffc06e"), Ui.BRAND)
+            disc.background = if (active)
+                Ui.ovalGradBg(Color.parseColor("#f87171"), Color.parseColor("#dc2626")).apply {
+                    setStroke(Ui.dp(this@MainActivity, 4), Color.parseColor("#fffdf9"))
+                }
+            else
+                Ui.ovalGradBg(Color.parseColor("#ffc06e"), Ui.BRAND).apply {
+                    setStroke(Ui.dp(this@MainActivity, 4), Color.parseColor("#fffdf9"))
+                }
         }
         restBreath?.cancel()
         restBreath = null
         restDisc?.let { disc ->
             disc.scaleX = 1f; disc.scaleY = 1f
-            if (active) {
+            if (active) {   // web 同款呼吸：上浮 3dp + scale 1.04，1.6s 往复
                 restBreath = ObjectAnimator.ofPropertyValuesHolder(
                     disc,
-                    PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.1f),
-                    PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.1f)
+                    PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, disc.translationY, disc.translationY - Ui.dp(this@MainActivity, 3).toFloat()),
+                    PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.04f),
+                    PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.04f)
                 ).apply {
-                    duration = 850
+                    duration = 1600
                     repeatCount = ValueAnimator.INFINITE
                     repeatMode = ValueAnimator.REVERSE
                     start()
