@@ -159,6 +159,7 @@ class SettingsPage(private val act: MainActivity) {
         card1.addView(Ui.field(c, "加班也计薪", setOvertime))
         card1.addView(Ui.caption(c).apply {
             text = "计薪时间 = 上班到下班、扣除午休；工作日默认周一至周五。数据保存在本机，不会上传。" })
+        fold(card1, "💼 收入与作息", open = true)
         root.addView(card1)
 
         // ---- 五险一金 · 个税 ----
@@ -226,6 +227,7 @@ class SettingsPage(private val act: MainActivity) {
         card2.addView(taxPreview)
         card2.addView(Ui.caption(c).apply {
             text = "社保默认 10.5% = 养老 8% + 医疗 2% + 失业 0.5%；公司社保默认 26.5% ≈ 养老 16% + 医疗生育 ~9.5% + 失业/工伤 ~1%，各地不同可微调。缴费档位按工资比例近似折算基数（个人与公司同一基数，选“自定义基数”可精确填写，如按当地下限缴纳）；公司缴纳不扣个税、不影响到手，但公积金进账是你的隐藏收入。起征点可加上专项附加扣除；基数上限填 0 表示不限。个税按月度简化税率估算，不含年终奖。" })
+        fold(card2, "🧾 五险一金 · 个税", open = false)
         root.addView(card2)
 
         // ---- 年假 ----
@@ -252,6 +254,7 @@ class SettingsPage(private val act: MainActivity) {
         leaveStd = numField(card3, "1 天 = 几小时", 112)
         leaveBaseNote = Ui.caption(c)
         card3.addView(leaveBaseNote)
+        fold(card3, "🌴 年假 · 攒假规则", open = false)
         root.addView(card3)
 
         // ---- 提醒与后台 ----
@@ -281,6 +284,7 @@ class SettingsPage(private val act: MainActivity) {
         cardR.addView(btnBg)
         cardR.addView(Ui.caption(c).apply {
             text = "开始摸鱼会启动前台计时服务：通知栏显示实时秒表、锁屏可见、可在通知里一键结束，App 被清理也照常计时。建议允许通知、加入电池优化白名单，并在系统设置里允许自启动。" })
+        fold(cardR, "🔔 提醒与后台", open = false)
         root.addView(cardR)
 
         // ---- 外观 ----
@@ -290,6 +294,7 @@ class SettingsPage(private val act: MainActivity) {
         cardL.addView(Ui.field(c, "深色桌面图标", iconDarkSw))
         cardL.addView(Ui.caption(c).apply {
             text = "切换后桌面图标变为深可可棕色版本（图案相同）。部分桌面启动器需要 1-2 秒刷新，个别需要重启桌面。" })
+        fold(cardL, "🎨 外观", open = false)
         root.addView(cardL)
 
         // ---- 摸鱼搭子 ----
@@ -317,9 +322,10 @@ class SettingsPage(private val act: MainActivity) {
         cardP.addView(Ui.field(c, "加班时劝你休息", swOvertime))
         cardP.addView(Ui.caption(c).apply {
             text = "改动与其它设置一样：点底部「保存」后生效。" })
+        fold(cardP, "🐾 摸鱼搭子", open = false)
         root.addView(cardP)
 
-        // ---- 数据 ----
+        // ---- 数据与备份 ----
         val card4 = Ui.card(c)
         calStatus = Ui.caption(c).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -332,6 +338,7 @@ class SettingsPage(private val act: MainActivity) {
                 act.say(msg); act.save(); renderComputed(); act.tickNow() }
         }
         card4.addView(btnCal)
+        fold(card4, "💾 数据与备份", open = false)
         root.addView(card4)
 
         root.addView(Ui.text(c, 11, Color.parseColor("#c4b49e")).apply {
@@ -342,6 +349,36 @@ class SettingsPage(private val act: MainActivity) {
 
         wire()
         return root
+    }
+
+    /** 让卡片可折叠：标题行加箭头，点击展开/收起内容 */
+    private fun fold(card: LinearLayout, titleText: String, open: Boolean) {
+        val oldTitle = card.getChildAt(0) as TextView
+        card.removeViewAt(0)
+        val header = LinearLayout(act).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setPadding(0, 0, 0, Ui.dp(act, 12))
+        }
+        val t = Ui.text(act, 13, Ui.SUB, true).apply {
+            text = titleText; letterSpacing = 0.08f
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val arrow = Ui.text(act, 12, Ui.SUB, true).apply { text = if (open) "▾" else "▸" }
+        header.addView(t); header.addView(arrow)
+        card.addView(header, 0)
+        fun applyState(o: Boolean) {
+            for (i in card.childCount - 1 downTo 1) card.getChildAt(i).visibility =
+                if (o) View.VISIBLE else View.GONE
+            arrow.text = if (o) "▾" else "▸"
+        }
+        applyState(open)
+        header.setOnClickListener {
+            val nowOpen = arrow.text == "▾"
+            applyState(!nowOpen)
+        }
     }
 
     private fun numField(parent: LinearLayout, label: String, width: Int): EditText {

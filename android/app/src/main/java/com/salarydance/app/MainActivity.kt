@@ -11,10 +11,7 @@ import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.RectF
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -291,6 +288,7 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
             isVerticalScrollBarEnabled = false
+            clipToOutline = true          // 卡片滚动时不越过顶栏（root 对圆钮关闭了裁剪）
         }
         scrollView.addView(pagesBox, ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
@@ -300,8 +298,9 @@ class MainActivity : Activity() {
         val defs = listOf(
             Triple("💰", "今日", "today"), Triple("🎁", "心愿", "wish"), Triple("🐟", "摸鱼", "rest"),
             Triple("🌴", "年假", "leave"), Triple("⚙️", "设置", "set"))
-        val tabbar = NotchTabbarView(c).apply {
+        val tabbar = LinearLayout(c).apply {
             orientation = LinearLayout.HORIZONTAL
+            background = Ui.roundBg(Color.parseColor("#fffdf9"), 0f)
             setPadding(Ui.dp(c, 8), Ui.dp(c, 6), Ui.dp(c, 8), Ui.dp(c, 6) + insetsBottom())
         }
         val map = LinkedHashMap<String, Pair<TextView, TextView>>()
@@ -556,21 +555,5 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         super.onDestroy()
         BreakEvents.onEndedRemotely = null
-    }
-}
-
-/** 底栏背景：圆角矩形 + 顶中弧形缺口（供凸起圆盘嵌入，CLEAR 抠洞后透出下层） */
-class NotchTabbarView(context: android.content.Context) : LinearLayout(context) {
-    private val barPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#fffdf9") }
-    private val notchPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#f3e3cd") }
-
-    init {
-        setWillNotDraw(false)
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
-        canvas.drawRect(rect, barPaint)
-        canvas.drawCircle(width / 2f, 0f, Ui.dp(context, 34).toFloat(), notchPaint)
     }
 }
