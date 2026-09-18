@@ -261,9 +261,17 @@ class MainActivity : Activity() {
             setPadding(Ui.dp(c, 18), Ui.dp(c, 16), Ui.dp(c, 18), Ui.dp(c, 8))
         }
         topbar.addView(Ui.text(c, 19, Ui.INK, true).apply {
-            text = "🐱 摸薪 Mocent"; letterSpacing = 0.06f })
+            text = "🐱 摸薪" })
+        topbar.addView(Ui.text(c, 19, Ui.INK, true).apply {
+            text = "Mocent"
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { marginStart = Ui.dp(c, 10) } })
         topbar.addView(Ui.text(c, 12, Ui.SUB, true).apply {
-            text = " 摸着摸着就涨薪"; letterSpacing = 0.08f })
+            text = "摸着摸着就涨薪"; letterSpacing = 0.08f
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { marginStart = Ui.dp(c, 10) } })
         topbar.addView(View(c), LinearLayout.LayoutParams(0, 0, 1f))
         val gear = Ui.text(c, 17, Ui.INK).apply {
             text = "⚙️"
@@ -299,16 +307,16 @@ class MainActivity : Activity() {
         val defs = listOf(
             Triple("💰", "今日", "today"), Triple("🎁", "心愿", "wish"), Triple("🐟", "摸鱼", "rest"),
             Triple("🌴", "年假", "leave"), Triple("⚙️", "设置", "set"))
-        // 底栏高度随屏幕自适应：约占屏高 8.5%，限制 54~88dp，避免矮屏拥挤/高屏空旷
-        val screenH = resources.displayMetrics.heightPixels
-        val navInset = insetsBottom().coerceAtMost(Ui.dp(c, 24))
-        val barH = (screenH * 0.068f).toInt().coerceIn(Ui.dp(c, 54), Ui.dp(c, 88))
+        // 底栏（方案 A）：固定内容区 48dp 保证“图标+文字”永远完整，
+        // 系统导航让位 0~20dp 动态叠加，总高 48~68dp
+        val navInset = insetsBottom().coerceIn(0, Ui.dp(c, 20))
         val tabbar = LinearLayout(c).apply {
             orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             background = Ui.roundBg(Color.parseColor("#fffdf9"), 0f)
-            setPadding(Ui.dp(c, 8), Ui.dp(c, 4), Ui.dp(c, 8), Ui.dp(c, 4) + navInset)
+            setPadding(Ui.dp(c, 8), Ui.dp(c, 2), Ui.dp(c, 8), Ui.dp(c, 2) + navInset)
             layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, barH)
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
         val map = LinkedHashMap<String, Pair<TextView, TextView>>()
         for ((emoji, label, name) in defs) {
@@ -320,11 +328,10 @@ class MainActivity : Activity() {
             val e: TextView
             val l: TextView
             if (name == "rest") {
-                // 闲鱼式中央凸起圆钮：56dp 圆盘仅放 🐟 图标，上浮嵌入底栏缺口
+                // 中央凸起圆钮：52dp 圆盘，凸出底栏上方约 1/3（对齐网页版观感）
                 cell.clipChildren = false
-                e = Ui.text(c, 28, Color.WHITE).apply {
+                e = Ui.text(c, 22, Color.WHITE).apply {
                     gravity = Gravity.CENTER; text = emoji
-                    translationY = -Ui.dp(c, 2).toFloat()   // 视觉居中微调
                 }
                 l = e                                        // 圆钮无文字，色值同步复用同一视图
                 val disc = LinearLayout(c).apply {
@@ -334,10 +341,10 @@ class MainActivity : Activity() {
                     background = Ui.ovalGradBg(Color.parseColor("#ffc06e"), Ui.BRAND).apply {
                         setStroke(Ui.dp(c, 4), Color.parseColor("#fffdf9"))   // 奶油白描边圈
                     }
-                    translationY = -Ui.dp(c, 40).toFloat()  // 圆心落在栏顶：一半凸出
+                    translationY = -Ui.dp(c, 12).toFloat()
                 }
                 disc.addView(e)
-                disc.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 72), Ui.dp(c, 72))
+                disc.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 52), Ui.dp(c, 52))
                 restDisc = disc
                 cell.addView(disc)
             } else {
@@ -354,8 +361,6 @@ class MainActivity : Activity() {
         tabbar.clipChildren = false
         tabbar.clipToPadding = false
         root.clipChildren = false
-        root.addView(tabbar, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
         setContentView(root)
         switchTab("today")

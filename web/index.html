@@ -38,8 +38,9 @@
   }
 
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 8px}
-  .brand{font-weight:900;font-size:19px;letter-spacing:1.5px}
-  .brand small{font-size:12px;color:var(--sub);font-weight:600;margin-left:8px;letter-spacing:1.2px}
+  .brand{font-weight:900;font-size:19px;letter-spacing:.5px}
+  .brand .en{margin:0 10px;letter-spacing:.5px}
+  .brand small{font-size:12px;color:var(--sub);font-weight:600;margin-left:10px;letter-spacing:1.2px}
   .gear{border:none;background:#fff;border-radius:12px;width:36px;height:36px;font-size:17px;cursor:pointer;
     box-shadow:0 2px 8px rgba(120,90,40,.12);transition:transform .15s}
   .gear:active{transform:rotate(40deg) scale(.92)}
@@ -232,7 +233,7 @@
   /* 摸鱼：闲鱼式中央凸起圆钮（常驻，计时中变红并呼吸） */
   .tab-rest{overflow:visible}
   .tab-rest .disc{display:flex;flex-direction:column;align-items:center;justify-content:center;
-    width:64px;height:64px;margin-top:-32px;border-radius:50%;
+    width:64px;height:64px;margin-top:-21px;border-radius:50%;
     background:linear-gradient(145deg,#ffc06e,#ff8a3d);
     box-shadow:0 0 0 4px var(--card), 0 8px 20px rgba(226,113,29,.4);
     transition:background .25s, box-shadow .25s}
@@ -266,7 +267,7 @@
 <div class="app">
 
   <header class="topbar">
-    <div class="brand">🐱 摸薪 Mocent<small>摸着摸着就涨薪</small></div>
+    <div class="brand">🐱 摸薪<span class="en">Mocent</span><small>摸着摸着就涨薪</small></div>
     <button class="gear" id="gearBtn" title="设置" aria-label="设置">⚙️</button>
   </header>
 
