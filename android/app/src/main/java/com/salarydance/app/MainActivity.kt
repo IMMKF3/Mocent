@@ -318,6 +318,7 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
+        root.addView(tabbar)
         val map = LinkedHashMap<String, Pair<TextView, TextView>>()
         for ((emoji, label, name) in defs) {
             val cell = LinearLayout(c).apply {
