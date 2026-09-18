@@ -261,9 +261,9 @@ class MainActivity : Activity() {
             setPadding(Ui.dp(c, 18), Ui.dp(c, 16), Ui.dp(c, 18), Ui.dp(c, 8))
         }
         topbar.addView(Ui.text(c, 19, Ui.INK, true).apply {
-            text = "🐱 摸薪 Mocent" })
+            text = "🐱 摸薪 Mocent"; letterSpacing = 0.06f })
         topbar.addView(Ui.text(c, 12, Ui.SUB, true).apply {
-            text = " 摸着摸着就涨薪" })
+            text = " 摸着摸着就涨薪"; letterSpacing = 0.08f })
         topbar.addView(View(c), LinearLayout.LayoutParams(0, 0, 1f))
         val gear = Ui.text(c, 17, Ui.INK).apply {
             text = "⚙️"
