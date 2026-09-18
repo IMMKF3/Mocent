@@ -299,10 +299,16 @@ class MainActivity : Activity() {
         val defs = listOf(
             Triple("💰", "今日", "today"), Triple("🎁", "心愿", "wish"), Triple("🐟", "摸鱼", "rest"),
             Triple("🌴", "年假", "leave"), Triple("⚙️", "设置", "set"))
+        // 底栏高度随屏幕自适应：约占屏高 8.5%，限制 54~88dp，避免矮屏拥挤/高屏空旷
+        val screenH = resources.displayMetrics.heightPixels
+        val navInset = insetsBottom().coerceAtMost(Ui.dp(c, 24))
+        val barH = (screenH * 0.085f).toInt().coerceIn(Ui.dp(c, 54), Ui.dp(c, 88))
         val tabbar = LinearLayout(c).apply {
             orientation = LinearLayout.HORIZONTAL
             background = Ui.roundBg(Color.parseColor("#fffdf9"), 0f)
-            setPadding(Ui.dp(c, 8), Ui.dp(c, 6), Ui.dp(c, 8), Ui.dp(c, 6) + insetsBottom())
+            setPadding(Ui.dp(c, 8), Ui.dp(c, 4), Ui.dp(c, 8), Ui.dp(c, 4) + navInset)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, barH)
         }
         val map = LinkedHashMap<String, Pair<TextView, TextView>>()
         for ((emoji, label, name) in defs) {
