@@ -15,6 +15,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import com.salarydance.app.Settings as AppSettings
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -57,6 +58,71 @@ class MainActivity : Activity() {
     private lateinit var scrollView: ScrollView
     private lateinit var pages: Map<String, View>
     private lateinit var tabs: Map<String, Pair<TextView, TextView>>
+    private var curTab = "today"
+    private var restDisc: LinearLayout? = null          // 摸鱼中央凸起圆钮
+    private var lastRestActive: Boolean? = null
+
+    // ---------- 设置草稿（改了不点保存不生效） ----------
+    // 草稿非空时：设置/搭子的写入走 draft 对象，st 始终指向已保存的基准状态；
+    // 其它页面读取 st 不受草稿影响，点「保存」才把草稿配置拷回 st 并落盘。
+    var draft: State? = null
+        private set
+
+    fun editSettings(): AppSettings {
+        beginEdit()
+        return draft!!.settings
+    }
+
+    fun editPet(): PetCfg {
+        beginEdit()
+        return draft!!.pet
+    }
+
+    fun editLeave(): LeaveCfg {
+        beginEdit()
+        return draft!!.leave
+    }
+
+    /** 设置页显示用：有草稿读草稿（保持输入框与预览一致），无草稿读基准 */
+    fun viewSettings(): AppSettings = draft?.settings ?: st.settings
+    fun viewPet(): PetCfg = draft?.pet ?: st.pet
+    fun viewLeave(): LeaveCfg = draft?.leave ?: st.leave
+
+    private fun beginEdit() {
+        if (draft != null) return
+        draft = Store.clone(st)
+        settingsPage.showSaveBar(true)
+    }
+
+    fun saveEdit() {
+        val d = draft ?: return
+        Store.copyConfig(st, d)
+        draft = null
+        settingsPage.showSaveBar(false)
+        save()
+        afterConfigChanged()
+        say("已保存 ✅ 设置生效啦")
+    }
+
+    fun revertEdit() {
+        if (draft == null) return
+        draft = null
+        settingsPage.showSaveBar(false)
+        applyLauncherIcon(st.settings.iconDark)
+        afterConfigChanged()
+        say("已放弃修改，还是原来的配置 😌")
+    }
+
+    private fun afterConfigChanged() {
+        settingsPage.renderAll()
+        petPage.renderPetUI()
+        wishPage.renderConvert()
+        wishPage.renderList()
+        restPage.renderRecords()
+        leavePage.renderLog()
+        leavePage.renderSummary()
+        tickNow()
+    }
 
     private val tickRunner = object : Runnable {
         override fun run() {
@@ -242,17 +308,42 @@ class MainActivity : Activity() {
             val cell = LinearLayout(c).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-                setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 6))
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
             }
-            val e = Ui.text(c, 21, Ui.TAB_OFF).apply { gravity = Gravity.CENTER; text = emoji }
-            val l = Ui.text(c, 11, Ui.TAB_OFF, true).apply { gravity = Gravity.CENTER; text = label }
-            cell.addView(e); cell.addView(l)
+            val e: TextView
+            val l: TextView
+            if (name == "rest") {
+                // 闲鱼式中央凸起圆钮：56dp 圆盘仅放图标，上浮超出底栏
+                cell.clipChildren = false
+                e = Ui.text(c, 24, Color.WHITE).apply {
+                    gravity = Gravity.CENTER; text = emoji
+                    translationY = -Ui.dp(c, 2).toFloat()   // 视觉居中微调
+                }
+                l = Ui.text(c, 9, Color.WHITE, true).apply { gravity = Gravity.CENTER; text = label }
+                val disc = LinearLayout(c).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER
+                    clipChildren = false
+                    background = Ui.ovalGradBg(Color.parseColor("#ffc06e"), Ui.BRAND)
+                }
+                disc.addView(e)
+                disc.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 56), Ui.dp(c, 56))
+                restDisc = disc
+                cell.addView(disc)
+            } else {
+                e = Ui.text(c, 21, Ui.TAB_OFF).apply { gravity = Gravity.CENTER; text = emoji }
+                l = Ui.text(c, 11, Ui.TAB_OFF, true).apply { gravity = Gravity.CENTER; text = label }
+                cell.addView(e); cell.addView(l)
+            }
             cell.setOnClickListener { switchTab(name) }
             tabbar.addView(cell)
             map[name] = e to l
         }
         tabs = map
+        // 圆钮要上浮超出底栏 → 允许各级容器越界绘制
+        tabbar.clipChildren = false
+        tabbar.clipToPadding = false
+        root.clipChildren = false
         root.addView(tabbar, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
@@ -309,9 +400,12 @@ class MainActivity : Activity() {
 
         todayPage.render(cents, d, t, status)
         leavePage.renderSummary()
+        syncRestTab()
         if (st.activeBreak != null) restPage.renderLive(System.currentTimeMillis())
 
-        if (t.second != lastFloaterSec && !st.settings.eco) {
+        // 飘字：仅今日页可见时生成（避免切页回来堆积）
+        if (t.second != lastFloaterSec && !st.settings.eco &&
+            pages["today"]?.visibility == View.VISIBLE) {
             lastFloaterSec = t.second
             if ((status == Status.WORKING || status == Status.OVERTIME) && Pay.perSec(st, d) > 0)
                 todayPage.addFloater("+¥" + Fmt.yuan3(Pay.perSec(st, d)))
@@ -406,13 +500,28 @@ class MainActivity : Activity() {
     fun save() = Store.save(this)
 
     fun switchTab(name: String) {
+        curTab = name
         pages.forEach { (k, v) -> v.visibility = if (k == name) View.VISIBLE else View.GONE }
         tabs.forEach { (k, p) ->
+            if (k == "rest") return@forEach        // 圆钮文字恒白，由 syncRestTab 管理
             val on = k == name
             p.first.setTextColor(if (on) Ui.BRAND_DEEP else Ui.TAB_OFF)
             p.second.setTextColor(if (on) Ui.BRAND_DEEP else Ui.TAB_OFF)
         }
+        syncRestTab()
         scrollView.scrollTo(0, 0)
+    }
+
+    /** 摸鱼圆钮：常驻凸起（品牌橙）；计时中变深红 */
+    private fun syncRestTab() {
+        val active = st.activeBreak != null
+        if (active == lastRestActive) return
+        lastRestActive = active
+        restDisc?.let { disc ->
+            disc.background = if (active) Ui.ovalGradBg(Color.parseColor("#f87171"), Color.parseColor("#dc2626"))
+            else Ui.ovalGradBg(Color.parseColor("#ffc06e"), Ui.BRAND)
+            disc.translationY = -Ui.dp(this, 12).toFloat()
+        }
     }
 
     override fun onResume() {

@@ -118,6 +118,39 @@ object Store {
         save(ctx)
     }
 
+    // ---------- 草稿（设置保存制） ----------
+
+    /** 深拷贝一份状态作为设置草稿 */
+    fun clone(s: State): State = parse(JSONObject(dump(s)))
+
+    /** 把草稿配置写回正式状态（不动运行时记账与各类流水） */
+    fun copyConfig(dst: State, src: State) {
+        val d = dst.settings; val s = src.settings
+        d.salary = s.salary; d.payday = s.payday
+        d.start = s.start; d.lunch = s.lunch
+        d.lunchStart = s.lunchStart; d.lunchEnd = s.lunchEnd
+        d.end = s.end; d.overtime = s.overtime
+        d.daysOverride = s.daysOverride; d.daysMonthKey = s.daysMonthKey
+        d.eco = s.eco; d.remindEnabled = s.remindEnabled
+        d.remindMin = s.remindMin; d.iconDark = s.iconDark
+        val t = d.tax; val x = s.tax
+        t.enabled = x.enabled; t.fundRate = x.fundRate; t.socialRate = x.socialRate
+        t.threshold = x.threshold; t.baseCap = x.baseCap; t.baseTier = x.baseTier
+        t.customBase = x.customBase; t.coSocialRate = x.coSocialRate; t.coFundRate = x.coFundRate
+        t.regionProv = x.regionProv; t.regionCity = x.regionCity; t.baseFloor = x.baseFloor
+        copyPet(dst.pet, src.pet)
+        // 年假只复制攒假规则，使用记录 log 属于流水，保留 dst 自己的
+        val dl = dst.leave; val sl = src.leave
+        dl.perDay = sl.perDay; dl.perDayUnit = sl.perDayUnit
+        dl.base = sl.base; dl.baseUnit = sl.baseUnit
+        dl.baseDate = sl.baseDate; dl.stdHours = sl.stdHours
+    }
+
+    private fun copyPet(dst: PetCfg, src: PetCfg) {
+        dst.id = src.id; dst.water = src.water; dst.move = src.move
+        dst.overtimeCare = src.overtimeCare; dst.reportMin = src.reportMin
+    }
+
     // ---------- 序列化 ----------
 
     fun dump(s: State): String {

@@ -141,15 +141,21 @@
   .empty{color:var(--sub);font-size:13px;text-align:center;padding:18px 0}
   .caption{font-size:11.5px;color:#bfae98;margin-top:10px;line-height:1.6}
 
-  .break-main{text-align:center;padding:26px 18px}
+  .break-main{display:flex;flex-direction:column;align-items:center;text-align:center;padding:22px 18px 18px;min-height:430px}
+  .break-head{width:100%}
   .break-timer{font-size:54px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:1px}
-  .break-cost{color:var(--sub);font-size:13.5px;margin:6px 0 18px}
+  .break-cost{color:var(--sub);font-size:13.5px;margin:6px 0 0}
   .break-cost b{color:var(--green)}
-  .big-btn{border:none;width:110px;height:110px;border-radius:50%;font:inherit;font-size:17px;font-weight:900;cursor:pointer;
-    color:#fff;background:linear-gradient(145deg,#8fd3ae,#2fa36b);box-shadow:0 10px 24px rgba(47,163,107,.35);
+  .break-mid{flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:18px 0}
+  .big-btn{border:none;width:160px;height:160px;border-radius:50%;font:inherit;font-size:21px;font-weight:900;cursor:pointer;position:relative;
+    color:#fff;background:linear-gradient(145deg,#8fd3ae,#2fa36b);box-shadow:0 14px 30px rgba(47,163,107,.42);
     transition:transform .15s,background .3s}
-  .big-btn.on{background:linear-gradient(145deg,#f39898,#e15554);box-shadow:0 10px 24px rgba(225,85,84,.35)}
+  .big-btn:before{content:'';position:absolute;inset:-11px;border-radius:50%;border:2.5px solid rgba(47,163,107,.4);
+    animation:halo 2.4s ease-out infinite;pointer-events:none}
+  .big-btn.on{background:linear-gradient(145deg,#f39898,#e15554);box-shadow:0 14px 30px rgba(225,85,84,.42)}
+  .big-btn.on:before{border-color:rgba(225,85,84,.4);animation-duration:1.2s}
   .big-btn:active{transform:scale(.94)}
+  @keyframes halo{0%{transform:scale(.9);opacity:.9}75%{transform:scale(1.25);opacity:0}100%{transform:scale(1.25);opacity:0}}
   .hint{font-size:12px;color:#b8a88f;margin-top:16px;line-height:1.6}
   .break-item{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px dashed var(--line);font-size:13.5px}
   .break-item:last-child{border-bottom:none}
@@ -163,6 +169,19 @@
   .inline-ctl{display:flex;gap:8px;align-items:center}
   .inline-ctl input{width:84px!important}
   .inline-ctl select{width:64px}
+
+  /* 设置页折叠分区 */
+  details.sec{background:var(--card);border-radius:20px;margin-bottom:14px;border:1px solid #fff8ec;
+    box-shadow:0 6px 18px rgba(130,95,45,.08);overflow:hidden}
+  details.sec summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:16px 18px;cursor:pointer;font-size:14.5px;font-weight:800;user-select:none}
+  details.sec summary::-webkit-details-marker{display:none}
+  details.sec summary:active{background:#fdf8ee}
+  .sec-arrow{flex:none;width:22px;height:22px;border-radius:50%;background:#f6efe2;display:flex;align-items:center;
+    justify-content:center;font-size:12px;color:#a4917c;transition:transform .22s;font-style:normal}
+  details.sec[open] .sec-arrow{transform:rotate(90deg)}
+  .sec-body{padding:0 18px 16px}
+  .sec-body .pet-stage-card{padding:8px 0 4px}
 
   .pet-stage-card{text-align:center;padding:26px 18px}
   .pet-stage-row{display:flex;align-items:center;justify-content:center;gap:12px}
@@ -195,13 +214,46 @@
   .sw input:checked+i:after{left:21px}
   select{border:1px solid #eddfc6;background:#fff;border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;color:var(--ink);outline:none}
 
-  .tabbar{display:flex;background:rgba(255,253,249,.92);backdrop-filter:blur(10px);
-    border-top:1px solid #f2e6d2;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
-  .tab{flex:1;border:none;background:none;font:inherit;cursor:pointer;display:flex;flex-direction:column;
+  .tabbar{position:relative;display:flex;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+  /* 底栏背景单独一层做弧形缺口（mask 只裁背景，不裁凸起的圆钮） */
+  .tabbar:before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:rgba(255,253,249,.92);backdrop-filter:blur(10px);border-top:1px solid #f2e6d2;
+    -webkit-mask:radial-gradient(circle 40px at 50% 0, transparent 36px, #000 38px);
+    mask:radial-gradient(circle 40px at 50% 0, transparent 36px, #000 38px)}
+  .tab{position:relative;z-index:1;flex:1;border:none;background:none;font:inherit;cursor:pointer;display:flex;flex-direction:column;
     align-items:center;gap:2px;padding:6px 0;color:#b6a48d;font-size:11px;font-weight:700;border-radius:12px;transition:.15s}
   .tab .ti{font-size:21px;line-height:1;transition:transform .18s}
   .tab.on{color:var(--brand-deep)}
   .tab.on .ti{transform:translateY(-2px) scale(1.15)}
+  /* 摸鱼：闲鱼式中央凸起圆钮（常驻，计时中变红并呼吸） */
+  .tab-rest{overflow:visible}
+  .tab-rest .disc{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    width:64px;height:64px;margin-top:-32px;border-radius:50%;
+    background:linear-gradient(145deg,#ffc06e,#ff8a3d);
+    box-shadow:0 0 0 4px var(--card), 0 8px 20px rgba(226,113,29,.4);
+    transition:background .25s, box-shadow .25s}
+  .tab-rest .ti{font-size:26px;line-height:1;transform:translateY(-2px)!important}
+  .tab-rest.on .disc{transform:translateY(-3px)}
+  .tab-rest.live .disc{background:linear-gradient(145deg,#f87171,#dc2626);
+    box-shadow:0 0 0 4px var(--card), 0 8px 20px rgba(220,38,38,.4);animation:restPulse 1.6s ease-in-out infinite}
+  @keyframes restPulse{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.04)}}
+
+  .toast{position:fixed;left:50%;bottom:calc(132px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);
+    background:rgba(67,53,42,.93);color:#fff8ec;font-size:13px;line-height:1.55;padding:11px 16px;border-radius:14px;
+    max-width:min(340px, 84vw);opacity:0;transition:.25s;pointer-events:none;z-index:60;text-align:center;
+    box-shadow:0 10px 26px rgba(60,40,20,.32)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .save-bar{display:none;position:absolute;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:40;
+    background:rgba(255,253,249,.97);backdrop-filter:blur(8px);border:1.5px solid #f3ddc2;border-radius:16px;
+    padding:10px 12px 10px 16px;align-items:center;gap:8px;box-shadow:0 10px 26px rgba(130,95,45,.22)}
+  .save-bar.show{display:flex}
+  .save-bar .sb-txt{flex:1;font-size:12.5px;font-weight:800;color:var(--brand-deep);min-width:0;line-height:1.4}
+  .save-bar .btn{width:auto;margin-top:0;padding:9px 18px;font-size:13.5px;flex:none}
+  .save-bar .btn.ghost{padding:9px 12px}
+
+  .break-note{display:none;font-size:11.5px;color:#b8a88f;margin-top:5px}
+  .break-note.show{display:block}
 
   .footer-note{text-align:center;font-size:11px;color:#c4b49e;padding:4px 20px 16px;line-height:1.7}
 </style>
@@ -282,9 +334,12 @@
     <!-- ================= 摸鱼 ================= -->
     <section class="page hidden" id="page-rest">
       <div class="card break-main">
-        <div class="break-timer" id="breakTimer">00:00</div>
-        <div class="break-cost">这一段摸鱼，对应计薪 <b id="breakCost">¥0.00</b></div>
-        <button class="big-btn" id="breakBtn">开始<br>摸鱼</button>
+        <div class="break-head">
+          <div class="break-timer" id="breakTimer">00:00</div>
+          <div class="break-cost">这一段摸鱼，对应计薪 <b id="breakCost">¥0.00</b></div>
+          <div class="break-note" id="breakNote"></div>
+        </div>
+        <div class="break-mid"><button class="big-btn" id="breakBtn">开始<br>摸鱼</button></div>
         <p class="hint">摸鱼时工资照常在涨，这里只是换个角度看看自己的时间 😌<br>开始休息点一下，结束休息再点一下。</p>
       </div>
       <div class="card">
@@ -315,92 +370,97 @@
       </div>
     </section>
 
-    <!-- ================= 搭子 ================= -->
-    <section class="page hidden" id="page-pet">
-      <div class="card pet-stage-card">
-        <div class="pet-stage-row">
-          <button class="pet-nav" id="petPrev" aria-label="上一个">‹</button>
-          <div class="pet-stage"><span class="pet-big" id="petBig">🐱</span></div>
-          <button class="pet-nav" id="petNext" aria-label="下一个">›</button>
-        </div>
-        <div class="pet-name" id="petName">小薪</div>
-        <div class="pet-desc" id="petDesc">元气报数担当</div>
-        <div class="bubble pet-bubble-center pop" id="petBubble">…</div>
-      </div>
-      <div class="card">
-        <div class="card-title">选择你的桌边搭子 <span style="font-weight:400">← 左右滑动 / 点击切换 →</span></div>
-        <div class="pet-grid" id="petGrid"></div>
-      </div>
-      <div class="card">
-        <div class="card-title">它的工作安排</div>
-        <div class="field"><label>定期汇报收入</label><select id="petReport">
-          <option value="10">每 10 分钟</option><option value="15">每 15 分钟</option>
-          <option value="30">每 30 分钟</option><option value="60">每 60 分钟</option></select></div>
-        <div class="field"><label>提醒喝水</label><span class="sw"><input type="checkbox" id="petWater" checked><i></i></span></div>
-        <div class="field"><label>提醒起来活动</label><span class="sw"><input type="checkbox" id="petMove" checked><i></i></span></div>
-        <div class="field"><label>加班时劝你休息</label><span class="sw"><input type="checkbox" id="petOvertime" checked><i></i></span></div>
-      </div>
-    </section>
-
     <!-- ================= 设置 ================= -->
     <section class="page hidden" id="page-set">
-      <div class="card">
-        <div class="card-title">收入与作息</div>
-        <div class="field"><label>月薪（税前）</label><input type="number" id="setSalary" min="0" step="100"></div>
-        <div class="field"><label>本月工作日（天）</label><input type="number" id="setDays" min="1" max="31" step="1"></div>
-        <div class="caption" id="daysAuto">默认按当月周一至周五自动统计，有法定节假日/调休可手动微调，下月自动重算。</div>
-        <div class="field"><label>发薪日</label><input type="number" id="setPayday" min="1" max="31" step="1"></div>
-        <div class="field"><label>上班时间</label><input type="time" id="setStart"></div>
-        <div class="field"><label>有午休</label><span class="sw"><input type="checkbox" id="setLunch"><i></i></span></div>
-        <div class="field"><label>午休开始</label><input type="time" id="setLunchStart"></div>
-        <div class="field"><label>午休结束</label><input type="time" id="setLunchEnd"></div>
-        <div class="field"><label>下班时间</label><input type="time" id="setEnd"></div>
-        <div class="field"><label>加班也计薪</label><span class="sw"><input type="checkbox" id="setOvertime"><i></i></span></div>
-        <div class="caption">计薪时间 = 上班到下班、扣除午休；工作日默认周一至周五。数据保存在本机浏览器里，不会上传。</div>
-      </div>
-      <div class="card">
-        <div class="card-title">五险一金 · 个税（税后计薪）</div>
-        <div class="field"><label>省份（自动填参数）</label><select id="taxProv"></select></div>
-        <div class="field"><label>城市</label><select id="taxCity"></select></div>
-        <div class="field"><label>按税后计薪</label><span class="sw"><input type="checkbox" id="taxOn"><i></i></span></div>
-        <div class="field"><label>公积金个人比例 %</label><input type="number" id="taxFund" min="0" max="12" step="0.5"></div>
-        <div class="field"><label>社保个人比例 %</label><input type="number" id="taxSocial" min="0" max="30" step="0.5"></div>
-        <div class="field"><label>个税起征点（元/月）</label><input type="number" id="taxThreshold" min="0" step="100"></div>
-        <div class="field"><label>缴费基数上限</label><input type="number" id="taxCap" min="0" step="100"></div>
-        <div class="field"><label>缴费基数下限</label><input type="number" id="taxFloor" min="0" step="100"></div>
-        <div class="field"><label>缴费档位（个人与公司同基数）</label><select id="taxTier">
-          <option value="full">足额 · 按工资全额</option>
-          <option value="p80">80% 档</option>
-          <option value="p60">60% 档 · 常见“最低档”</option>
-          <option value="custom">自定义基数</option>
-        </select></div>
-        <div class="field hidden" id="taxTierCustomField"><label>自定义缴费基数（元/月）</label><input type="number" id="taxTierCustom" min="0" step="100"></div>
-        <div class="field"><label>公司社保比例 %</label><input type="number" id="taxCoSocial" min="0" max="30" step="0.5"></div>
-        <div class="field"><label>公司公积金比例 %</label><input type="number" id="taxCoFund" min="0" max="12" step="0.5"></div>
-        <div class="caption" id="taxPreview"></div>
-        <div class="caption">地区选项为 2024–2025 年度常见参考值，各地每年 7 月前后调整，请以当地人社/公积金中心公布为准；选择后仍可逐项修改（一旦手改，地区自动变为“自定义”）。社保个人默认 10.5% = 养老 8% + 医疗 2% + 失业 0.5%；公司社保默认 26.5% ≈ 养老 16% + 医疗生育 ~9.5% + 失业/工伤 ~1%。缴费档位按工资比例近似折算基数（个人与公司同一基数，选“自定义基数”可精确填写，如按当地下限缴纳）；公司缴纳不扣个税、不影响到手，但公积金进账是你的隐藏收入。起征点可加上专项附加扣除（如房租房贷、子女教育）；基数上限/下限填 0 表示不限。个税按月度简化税率估算，不含年终奖。</div>
-      </div>
-      <div class="card">
-        <div class="card-title">年假</div>
-        <div class="field"><label>每工作日攒</label><span class="inline-ctl">
-          <input type="number" id="leavePerDay" min="0" step="0.05">
-          <select id="leavePerUnit"><option value="hour">小时</option><option value="day">天</option></select></span></div>
-        <div class="field"><label>当前余额</label><span class="inline-ctl">
-          <input type="number" id="leaveBase" min="0" step="0.5">
-          <select id="leaveBaseUnit"><option value="day">天</option><option value="hour">小时</option></select></span></div>
-        <div class="field"><label>1 天 = 几小时</label><input type="number" id="leaveStd" min="1" max="24" step="0.5"></div>
-        <div class="caption" id="leaveBaseNote"></div>
-      </div>
-      <div class="card">
-        <div class="card-title">数据</div>
-        <div class="caption" id="calStatus" style="margin:0 0 6px"></div>
-        <button class="btn ghost" id="btnCal">更新节假日数据 🔄</button>
-        <div class="btn-row">
-          <button class="btn ghost" id="btnExport">导出数据</button>
-          <button class="btn ghost" id="btnImport">导入数据</button>
+      <details class="sec" open>
+        <summary>💼 收入与作息<i class="sec-arrow">›</i></summary>
+        <div class="sec-body">
+          <div class="field"><label>月薪（税前）</label><input type="number" id="setSalary" min="0" step="100"></div>
+          <div class="field"><label>本月工作日（天）</label><input type="number" id="setDays" min="1" max="31" step="1"></div>
+          <div class="caption" id="daysAuto">默认按当月周一至周五自动统计，有法定节假日/调休可手动微调，下月自动重算。</div>
+          <div class="field"><label>发薪日</label><input type="number" id="setPayday" min="1" max="31" step="1"></div>
+          <div class="field"><label>上班时间</label><input type="time" id="setStart"></div>
+          <div class="field"><label>有午休</label><span class="sw"><input type="checkbox" id="setLunch"><i></i></span></div>
+          <div class="field"><label>午休开始</label><input type="time" id="setLunchStart"></div>
+          <div class="field"><label>午休结束</label><input type="time" id="setLunchEnd"></div>
+          <div class="field"><label>下班时间</label><input type="time" id="setEnd"></div>
+          <div class="field"><label>加班也计薪</label><span class="sw"><input type="checkbox" id="setOvertime"><i></i></span></div>
+          <div class="caption">计薪时间 = 上班到下班、扣除午休；工作日默认周一至周五。数据保存在本机浏览器里，不会上传。</div>
         </div>
-        <input type="file" id="fileImport" accept=".json,application/json" class="hidden">
-      </div>
+      </details>
+      <details class="sec">
+        <summary>🧾 五险一金 · 个税<i class="sec-arrow">›</i></summary>
+        <div class="sec-body">
+          <div class="field"><label>省份（自动填参数）</label><select id="taxProv"></select></div>
+          <div class="field"><label>城市</label><select id="taxCity"></select></div>
+          <div class="field"><label>按税后计薪</label><span class="sw"><input type="checkbox" id="taxOn"><i></i></span></div>
+          <div class="field"><label>公积金个人比例 %</label><input type="number" id="taxFund" min="0" max="12" step="0.5"></div>
+          <div class="field"><label>社保个人比例 %</label><input type="number" id="taxSocial" min="0" max="30" step="0.5"></div>
+          <div class="field"><label>个税起征点（元/月）</label><input type="number" id="taxThreshold" min="0" step="100"></div>
+          <div class="field"><label>缴费基数上限</label><input type="number" id="taxCap" min="0" step="100"></div>
+          <div class="field"><label>缴费基数下限</label><input type="number" id="taxFloor" min="0" step="100"></div>
+          <div class="field"><label>缴费档位（个人与公司同基数）</label><select id="taxTier">
+            <option value="full">足额 · 按工资全额</option>
+            <option value="p80">80% 档</option>
+            <option value="p60">60% 档 · 常见“最低档”</option>
+            <option value="custom">自定义基数</option>
+          </select></div>
+          <div class="field hidden" id="taxTierCustomField"><label>自定义缴费基数（元/月）</label><input type="number" id="taxTierCustom" min="0" step="100"></div>
+          <div class="field"><label>公司社保比例 %</label><input type="number" id="taxCoSocial" min="0" max="30" step="0.5"></div>
+          <div class="field"><label>公司公积金比例 %</label><input type="number" id="taxCoFund" min="0" max="12" step="0.5"></div>
+          <div class="caption" id="taxPreview"></div>
+          <div class="caption">地区选项为 2024–2025 年度常见参考值，各地每年 7 月前后调整，请以当地人社/公积金中心公布为准；选择后仍可逐项修改（一旦手改，地区自动变为“自定义”）。社保个人默认 10.5% = 养老 8% + 医疗 2% + 失业 0.5%；公司社保默认 26.5% ≈ 养老 16% + 医疗生育 ~9.5% + 失业/工伤 ~1%。缴费档位按工资比例近似折算基数（个人与公司同一基数，选“自定义基数”可精确填写，如按当地下限缴纳）；公司缴纳不扣个税、不影响到手，但公积金进账是你的隐藏收入。起征点可加上专项附加扣除（如房租房贷、子女教育）；基数上限/下限填 0 表示不限。个税按月度简化税率估算，不含年终奖。</div>
+        </div>
+      </details>
+      <details class="sec">
+        <summary>🌴 年假 · 攒假规则<i class="sec-arrow">›</i></summary>
+        <div class="sec-body">
+          <div class="field"><label>每工作日攒</label><span class="inline-ctl">
+            <input type="number" id="leavePerDay" min="0" step="0.05">
+            <select id="leavePerUnit"><option value="hour">小时</option><option value="day">天</option></select></span></div>
+          <div class="field"><label>当前余额</label><span class="inline-ctl">
+            <input type="number" id="leaveBase" min="0" step="0.5">
+            <select id="leaveBaseUnit"><option value="day">天</option><option value="hour">小时</option></select></span></div>
+          <div class="field"><label>1 天 = 几小时</label><input type="number" id="leaveStd" min="1" max="24" step="0.5"></div>
+          <div class="caption" id="leaveBaseNote"></div>
+        </div>
+      </details>
+      <details class="sec">
+        <summary>🐾 桌边搭子<i class="sec-arrow">›</i></summary>
+        <div class="sec-body">
+          <div class="pet-stage-card">
+            <div class="pet-stage-row">
+              <button class="pet-nav" id="petPrev" aria-label="上一个">‹</button>
+              <div class="pet-stage"><span class="pet-big" id="petBig">🐱</span></div>
+              <button class="pet-nav" id="petNext" aria-label="下一个">›</button>
+            </div>
+            <div class="pet-name" id="petName">小薪</div>
+            <div class="pet-desc" id="petDesc">元气报数担当</div>
+            <div class="bubble pet-bubble-center pop" id="petBubble">…</div>
+          </div>
+          <div class="card-title" style="margin-top:8px">选择你的桌边搭子 <span style="font-weight:400">← 点击切换 →</span></div>
+          <div class="pet-grid" id="petGrid"></div>
+          <div class="card-title" style="margin:8px 0 0">它的工作安排</div>
+          <div class="field"><label>定期汇报收入</label><select id="petReport">
+            <option value="10">每 10 分钟</option><option value="15">每 15 分钟</option>
+            <option value="30">每 30 分钟</option><option value="60">每 60 分钟</option></select></div>
+          <div class="field"><label>提醒喝水</label><span class="sw"><input type="checkbox" id="petWater" checked><i></i></span></div>
+          <div class="field"><label>提醒起来活动</label><span class="sw"><input type="checkbox" id="petMove" checked><i></i></span></div>
+          <div class="field"><label>加班时劝你休息</label><span class="sw"><input type="checkbox" id="petOvertime" checked><i></i></span></div>
+        </div>
+      </details>
+      <details class="sec">
+        <summary>💾 数据与备份<i class="sec-arrow">›</i></summary>
+        <div class="sec-body">
+          <div class="caption" id="calStatus" style="margin:12px 0 6px"></div>
+          <button class="btn ghost" id="btnCal">更新节假日数据 🔄</button>
+          <div class="btn-row">
+            <button class="btn ghost" id="btnExport">导出数据</button>
+            <button class="btn ghost" id="btnImport">导入数据</button>
+          </div>
+          <input type="file" id="fileImport" accept=".json,application/json" class="hidden">
+        </div>
+      </details>
       <p class="footer-note">数据保存在本机浏览器，不会上传 · 仅供个人参考 💛</p>
     </section>
 
@@ -409,11 +469,16 @@
   <nav class="tabbar">
     <button class="tab on" data-page="today"><span class="ti">💰</span>今日</button>
     <button class="tab" data-page="wish"><span class="ti">🎁</span>心愿</button>
-    <button class="tab" data-page="rest"><span class="ti">🐟</span>摸鱼</button>
+    <button class="tab tab-rest" data-page="rest"><span class="disc"><span class="ti">🐟</span></span></button>
     <button class="tab" data-page="leave"><span class="ti">🌴</span>年假</button>
-    <button class="tab" data-page="pet"><span class="ti">🐾</span>搭子</button>
     <button class="tab" data-page="set"><span class="ti">⚙️</span>设置</button>
   </nav>
+
+  <div class="save-bar" id="saveBar">
+    <span class="sb-txt">✏️ 有未保存的更改，保存后才会生效</span>
+    <button class="btn ghost" id="btnRevert">放弃</button>
+    <button class="btn" id="btnSave">保存</button>
+  </div>
 </div>
 
 <script>
@@ -968,7 +1033,7 @@ function renderToday(cents, now, st) {
   $('#rateSec').textContent = '¥' + perSec().toFixed(4);
   $('#daysNote').textContent = monthWorkdays();
 
-  $$('#modeSwitch button').forEach(b => b.classList.toggle('on', (b.dataset.mode === 'net') === !!state.settings.tax.enabled));
+  $$('#modeSwitch button').forEach(b => b.classList.toggle('on', (b.dataset.mode === 'net') === curTaxEnabled()));
   const tn = $('#taxNote'), tSal = state.settings.salary, tCfg = state.settings.tax;
   if (tSal > 0 && (tCfg.enabled || tCfg.coSocialRate > 0 || tCfg.coFundRate > 0)) {
     tn.style.display = 'block';
@@ -1056,16 +1121,34 @@ function leaveCalc(now) {
 }
 
 setInterval(() => {
+  if (document.getElementById('page-today').classList.contains('hidden')) return;  // 其他页面不生成，避免回页时堆积
   const st = statusOf(new Date());
   if ((st !== 'working' && st !== 'overtime') || perSec() <= 0) return;
+  const box = $('#floaters');
   const f = document.createElement('span');
   f.className = 'floater';
   f.textContent = '+¥' + perSec().toFixed(3);
   f.style.left = (20 + Math.random() * 60) + '%';
   f.style.top = (34 + Math.random() * 16) + '%';
   f.addEventListener('animationend', () => f.remove());
-  $('#floaters').appendChild(f);
+  box.appendChild(f);
+  while (box.children.length > 5) box.firstChild.remove();   // 同时最多 5 个
 }, 1000);
+
+/* 轻提示 toast */
+let toastTimer = 0;
+function toast(msg) {
+  let t = document.getElementById('toastBox');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toastBox'; t.className = 'toast';
+    document.querySelector('.app').appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
 
 /* ================= 心愿单 ================= */
 function timeFor(price) {
@@ -1129,11 +1212,41 @@ $('#wishAdd').addEventListener('click', () => {
 /* ================= 摸鱼 ================= */
 const fmtDur = sec => sec >= 60 ? Math.round(sec / 60) + ' 分钟' : Math.round(sec) + ' 秒';
 const fmtHMS = ts => { const d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
+function paidWindowsMin() {                            // 今日计薪分钟区间（时钟坐标，午休/工外不算）
+  const s = state.settings, st = toMin(s.start), en = toMin(s.end), w = [];
+  let hasLunch = false;
+  if (s.lunch) {
+    const l0 = Math.max(toMin(s.lunchStart), st), l1 = Math.min(toMin(s.lunchEnd), en);
+    if (l1 > l0) { w.push([st, l0]); w.push([l1, en]); hasLunch = true; }
+  }
+  if (!hasLunch && en > st) w.push([st, en]);
+  if (s.overtime) w.push([en, 24 * 60]);
+  return w;
+}
+const modOfDay = d => d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60 + d.getMilliseconds() / 60000;
+function paidBreakSec(startTs, endTs) {                // 摸鱼时段与计薪时间重叠的秒数（工外为 0）
+  const d0 = new Date(startTs), d1 = new Date(endTs);
+  if (!isWorkday(d0) || dayKey(d0) !== dayKey(d1)) return 0;
+  const a = modOfDay(d0), b = modOfDay(d1);
+  let sec = 0;
+  for (const [w0, w1] of paidWindowsMin()) {
+    const o = Math.min(b, w1) - Math.max(a, w0);
+    if (o > 0) sec += o * 60;
+  }
+  return Math.max(0, sec);
+}
+const BREAK_HINT = {                                   // 工作时间外开摸的活泼提示
+  before:  '还没上班就开始摸鱼？这份松弛感先存着，现在不算钱哦 🛋️',
+  lunch:   '午休摸鱼不计薪～先干饭，米饭才是真的补给 🍚',
+  after:   '都下班啦！计时照跑，钱一分不涨，纯纯用爱摸鱼 🌙',
+  weekend: '今天不上班！摸的是快乐鱼，不带薪的那种 🎣',
+  holiday: '法定节假日摸鱼：不涨钱，但快乐是足额发放的 🎉'
+};
 function renderBreaks() {
-  const totalSec = state.breaks.reduce((a, b) => a + (b.e - b.s), 0) / 1000;
-  const totalCost = totalSec * perSec();
+  const totalPaid = state.breaks.reduce((a, b) => a + paidBreakSec(b.s, b.e), 0);
+  const totalCost = totalPaid * perSec();
   $('#breakTotal').textContent = state.breaks.length
-    ? `· 合计 ${fmtDur(totalSec)} ≈ ¥${totalCost.toFixed(2)}` : '';
+    ? `· 合计 ${fmtDur(totalPaid)}（计薪时段）≈ ¥${totalCost.toFixed(2)}` : '';
   const list = $('#breakList');
   if (!state.breaks.length && !state.activeBreak) {
     list.innerHTML = '<div class="empty">今天还没摸鱼，辛苦啦（也不知道该不该夸 🤔）</div>'; return;
@@ -1141,34 +1254,47 @@ function renderBreaks() {
   list.innerHTML = '';
   for (const b of [...state.breaks].reverse()) {
     const sec = (b.e - b.s) / 1000;
-    const cost = sec * perSec();
+    const paid = paidBreakSec(b.s, b.e);
+    const cost = paid * perSec();
     const div = document.createElement('div');
     div.className = 'break-item';
     div.innerHTML = `<div><div>${fmtHMS(b.s)} – ${fmtHMS(b.e)}</div>
-      <div class="t">${fmtDur(sec)}</div></div><b>≈ ¥${cost.toFixed(2)}</b>`;
+      <div class="t">${fmtDur(sec)}${paid <= 0 ? ' · 工作时间外' : (paid < sec - 1 ? ' · 计薪 ' + fmtDur(paid) : '')}</div></div><b>${paid <= 0 ? '未计薪' : '≈ ¥' + cost.toFixed(2)}</b>`;
     list.appendChild(div);
   }
 }
 function renderBreakLive(now) {
   const el = (now - state.activeBreak) / 1000;
+  const paid = paidBreakSec(state.activeBreak, now);
   $('#breakTimer').textContent = pad(Math.floor(el / 60)) + ':' + pad(Math.floor(el % 60));
-  $('#breakCost').textContent = '¥' + (el * perSec()).toFixed(2);
+  $('#breakCost').textContent = '¥' + (paid * perSec()).toFixed(2);
+  const note = $('#breakNote');
+  if (paid <= 0) {
+    note.textContent = '⏰ 现在不在计薪时段：只帮你计时，不算钱～';
+    note.classList.add('show');
+  } else if (paid < el - 1) {
+    note.textContent = '⏰ 摸出计时时段啦，只有落在工作时间里的部分才计薪';
+    note.classList.add('show');
+  } else note.classList.remove('show');
 }
 $('#breakBtn').addEventListener('click', () => {
   if (!state.activeBreak) {
+    const st = statusOf(new Date());
+    if (st !== 'working' && st !== 'overtime') toast(BREAK_HINT[st] || '现在摸鱼不带薪哦，纯纯免费快乐 🎣');
     state.activeBreak = Date.now();
     $('#breakBtn').classList.add('on');
     $('#breakBtn').innerHTML = '结束<br>摸鱼';
     say(petLine('breakStart'));
   } else {
-    const cost = ((Date.now() - state.activeBreak) / 1000 * perSec()).toFixed(2);
+    const cost = paidBreakSec(state.activeBreak, Date.now()) * perSec();
     state.breaks.push({ s: state.activeBreak, e: Date.now() });
     state.activeBreak = null;
     $('#breakBtn').classList.remove('on');
     $('#breakBtn').innerHTML = '开始<br>摸鱼';
     $('#breakTimer').textContent = '00:00';
     $('#breakCost').textContent = '¥0.00';
-    say(petLine('breakEnd', '¥' + cost));
+    $('#breakNote').classList.remove('show');
+    say(petLine('breakEnd', '¥' + cost.toFixed(2)));
     renderBreaks();
   }
   markDirty(); save();
@@ -1228,30 +1354,30 @@ function renderLeaveSettings() {
     : '首次修改“当前余额”时，会把今天记为基准日，之后自动往上攒。';
 }
 $('#leavePerDay').addEventListener('change', e => {
-  state.leave.perDay = clamp(parseFloat(e.target.value) || 0, 0, 24);
-  e.target.value = state.leave.perDay; markDirty(); save(); renderLeaveSettings(); renderLeave(new Date());
+  D().leave.perDay = clamp(parseFloat(e.target.value) || 0, 0, 24);
+  e.target.value = D().leave.perDay; draftChanged();
 });
-$('#leavePerUnit').addEventListener('change', e => { state.leave.perDayUnit = e.target.value; markDirty(); save(); renderLeaveSettings(); renderLeave(new Date()); });
+$('#leavePerUnit').addEventListener('change', e => { D().leave.perDayUnit = e.target.value; draftChanged(); });
 $('#leaveBase').addEventListener('change', e => {
-  state.leave.base = clamp(parseFloat(e.target.value) || 0, 0, 8760);
-  state.leave.baseDate = dayKey(new Date());           // 以今天为基准日重新起算
-  markDirty(); save(); renderLeaveSettings(); renderLeave(new Date());
+  D().leave.base = clamp(parseFloat(e.target.value) || 0, 0, 8760);
+  D().leave.baseDate = dayKey(new Date());           // 以今天为基准日重新起算
+  draftChanged();
 });
 $('#leaveBaseUnit').addEventListener('change', e => {
-  state.leave.baseUnit = e.target.value;
-  state.leave.baseDate = dayKey(new Date());
-  markDirty(); save(); renderLeaveSettings(); renderLeave(new Date());
+  D().leave.baseUnit = e.target.value;
+  D().leave.baseDate = dayKey(new Date());
+  draftChanged();
 });
 $('#leaveStd').addEventListener('change', e => {
-  state.leave.stdHours = clamp(parseFloat(e.target.value) || 8, 1, 24);
-  e.target.value = state.leave.stdHours; markDirty(); save(); renderLeaveSettings(); renderLeave(new Date());
+  D().leave.stdHours = clamp(parseFloat(e.target.value) || 8, 1, 24);
+  e.target.value = D().leave.stdHours; draftChanged();
 });
 
 /* ================= 搭子页 ================= */
 const PET_ORDER = Object.keys(PETS);
-function renderPetUI(scrollToActive) {
+function renderPetUI(scrollToActive, includeDock = true) {
   const p = curPet();
-  $('#dockPet').textContent = p.emoji;
+  if (includeDock) $('#dockPet').textContent = p.emoji;
   $('#petBig').textContent = p.emoji;
   $('#petName').textContent = p.name;
   $('#petDesc').textContent = p.tag;
@@ -1275,13 +1401,17 @@ function renderPetUI(scrollToActive) {
   }
 }
 function selectPet(key, dir) {
-  if (!PETS[key] || key === state.pet.id) { renderPetUI(true); return; }
-  state.pet.id = key; markDirty(); save();
-  const big = $('#petBig');
-  big.classList.remove('swap-l', 'swap-r', 'hop'); void big.offsetWidth;
-  big.classList.add(dir >= 0 ? 'swap-r' : 'swap-l');
-  say(petLine(statusOf(new Date())) || (PETS[key].name + ' 上线啦～'));
-  renderPetUI(true);
+  if (!PETS[key]) { renderPetUI(true); return; }
+  if (key === (draft ? draft.pet.id : state.pet.id)) { renderPetUI(true); return; }
+  D().pet.id = key;
+  draftChanged();
+  withDraft(() => {
+    const big = $('#petBig');
+    big.classList.remove('swap-l', 'swap-r', 'hop'); void big.offsetWidth;
+    big.classList.add(dir >= 0 ? 'swap-r' : 'swap-l');
+    renderPetUI(true, false);
+  });
+  say(petLine(statusOf(new Date())) || (PETS[key].name + ' 上线啦～（记得点保存生效）'));
 }
 $('#petPrev').addEventListener('click', () => {
   const i = PET_ORDER.indexOf(state.pet.id);
@@ -1307,10 +1437,10 @@ $('#petDock').addEventListener('click', () => {
   const e = $('#dockPet'); e.classList.remove('hop'); void e.offsetWidth; e.classList.add('hop');
   poke();
 });
-$('#petReport').addEventListener('change', e => { state.pet.reportMin = parseInt(e.target.value, 10) || 15; markDirty(); save(); });
-$('#petWater').addEventListener('change', e => { state.pet.water = e.target.checked; markDirty(); save(); });
-$('#petMove').addEventListener('change', e => { state.pet.move = e.target.checked; markDirty(); save(); });
-$('#petOvertime').addEventListener('change', e => { state.pet.overtimeCare = e.target.checked; markDirty(); save(); });
+$('#petReport').addEventListener('change', e => { D().pet.reportMin = parseInt(e.target.value, 10) || 15; draftChanged(); });
+$('#petWater').addEventListener('change', e => { D().pet.water = e.target.checked; draftChanged(); });
+$('#petMove').addEventListener('change', e => { D().pet.move = e.target.checked; draftChanged(); });
+$('#petOvertime').addEventListener('change', e => { D().pet.overtimeCare = e.target.checked; draftChanged(); });
 
 let lastReportAt = Date.now(), lastWaterAt = Date.now(), lastMoveAt = Date.now();
 setInterval(() => {
@@ -1328,8 +1458,23 @@ function onStatusChange(st) {
   if (line) say(line);
 }
 
-/* ================= 设置页 ================= */
-function renderSettings() {
+/* ================= 设置页（草稿制：改了不点保存不生效） ================= */
+let draft = null;                                      // null = 没有未保存的修改
+const draftSnapshot = () => JSON.parse(JSON.stringify({ settings: state.settings, leave: state.leave, pet: state.pet }));
+function D() { if (!draft) draft = draftSnapshot(); return draft; }
+function withDraft(fn) {                               // 以草稿视角执行渲染/读取
+  if (!draft) { fn(); return; }
+  const bak = { s: state.settings, l: state.leave, p: state.pet };
+  state.settings = draft.settings; state.leave = draft.leave; state.pet = draft.pet;
+  try { fn(); } finally { state.settings = bak.s; state.leave = bak.l; state.pet = bak.p; }
+}
+const curTaxEnabled = () => draft ? draft.settings.tax.enabled : state.settings.tax.enabled;
+function draftChanged() {
+  $('#saveBar').classList.add('show');
+  withDraft(() => { renderSettings(); renderPetUI(false, false); renderLeaveSettings(); });
+}
+function renderSettings() { withDraft(renderSettingsRaw); }
+function renderSettingsRaw() {
   const s = state.settings;
   $('#setSalary').value = s.salary;
   $('#setDays').value = monthWorkdays();
@@ -1376,51 +1521,67 @@ function renderSettings() {
     : '节假日数据：内置 2026 离线可用，联网时自动更新';
 }
 function bindSetting(id, fn) {
-  $(id).addEventListener('change', e => { fn(e.target); markDirty(); save(); renderConvert(); renderWish(); renderBreaks(); uiTick(); });
+  $(id).addEventListener('change', e => { fn(e.target); draftChanged(); });
 }
-bindSetting('#setSalary', el => state.settings.salary = clamp(parseFloat(el.value) || 0, 0, 100000000));
+bindSetting('#setSalary', el => D().settings.salary = clamp(parseFloat(el.value) || 0, 0, 100000000));
 bindSetting('#setDays', el => {
   const v = parseInt(el.value, 10);
-  if (v >= 1 && v <= 31) { state.settings.daysOverride = v; state.settings.daysMonthKey = monthKey(new Date()); }
-  else { state.settings.daysOverride = null; el.value = monthWorkdays(); }
+  if (v >= 1 && v <= 31) { D().settings.daysOverride = v; D().settings.daysMonthKey = monthKey(new Date()); }
+  else { D().settings.daysOverride = null; el.value = monthWorkdays(); }
 });
-bindSetting('#setPayday', el => state.settings.payday = clamp(parseInt(el.value, 10) || 10, 1, 31));
-bindSetting('#setStart', el => state.settings.start = el.value || '09:00');
-bindSetting('#setEnd', el => state.settings.end = el.value || '18:00');
-bindSetting('#setLunch', el => state.settings.lunch = el.checked);
-bindSetting('#setLunchStart', el => state.settings.lunchStart = el.value || '12:00');
-bindSetting('#setLunchEnd', el => state.settings.lunchEnd = el.value || '13:00');
-bindSetting('#setOvertime', el => state.settings.overtime = el.checked);
-const bindTax = (id, fn) => $(id).addEventListener('change', e => {
-  fn(e.target); markDirty(); save(); renderSettings(); renderConvert(); renderWish(); renderBreaks(); uiTick();
-});
-bindTax('#taxOn', el => state.settings.tax.enabled = el.checked);
-bindTax('#taxFund', el => { state.settings.tax.regionProv = 'custom'; state.settings.tax.regionCity = 'custom'; state.settings.tax.fundRate = clamp(parseFloat(el.value) || 0, 0, 12); el.value = state.settings.tax.fundRate; });
-bindTax('#taxSocial', el => { state.settings.tax.regionProv = 'custom'; state.settings.tax.regionCity = 'custom'; state.settings.tax.socialRate = clamp(parseFloat(el.value) || 0, 0, 30); el.value = state.settings.tax.socialRate; });
-bindTax('#taxThreshold', el => { state.settings.tax.threshold = clamp(parseFloat(el.value) || 0, 0, 1000000); el.value = state.settings.tax.threshold; });
+bindSetting('#setPayday', el => D().settings.payday = clamp(parseInt(el.value, 10) || 10, 1, 31));
+bindSetting('#setStart', el => D().settings.start = el.value || '09:00');
+bindSetting('#setEnd', el => D().settings.end = el.value || '18:00');
+bindSetting('#setLunch', el => D().settings.lunch = el.checked);
+bindSetting('#setLunchStart', el => D().settings.lunchStart = el.value || '12:00');
+bindSetting('#setLunchEnd', el => D().settings.lunchEnd = el.value || '13:00');
+bindSetting('#setOvertime', el => D().settings.overtime = el.checked);
+const bindTax = (id, fn) => $(id).addEventListener('change', e => { fn(e.target); draftChanged(); });
+bindTax('#taxOn', el => D().settings.tax.enabled = el.checked);
+bindTax('#taxFund', el => { const t = D().settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.fundRate = clamp(parseFloat(el.value) || 0, 0, 12); el.value = t.fundRate; });
+bindTax('#taxSocial', el => { const t = D().settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.socialRate = clamp(parseFloat(el.value) || 0, 0, 30); el.value = t.socialRate; });
+bindTax('#taxThreshold', el => { D().settings.tax.threshold = clamp(parseFloat(el.value) || 0, 0, 1000000); el.value = D().settings.tax.threshold; });
 bindTax('#taxProv', el => {
-  const t = state.settings.tax;
+  const t = D().settings.tax;
   t.regionProv = el.value;
   t.regionCity = el.value === 'custom' ? 'custom' : PROV_CITIES[el.value][0];
   applyRegion(t);
 });
 bindTax('#taxCity', el => {
-  const t = state.settings.tax;
+  const t = D().settings.tax;
   if (el.value === 'custom') { t.regionProv = 'custom'; t.regionCity = 'custom'; }
   else { t.regionCity = el.value; applyRegion(t); }
 });
-bindTax('#taxCap', el => { const t = state.settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.baseCap = clamp(parseFloat(el.value) || 0, 0, 10000000); el.value = t.baseCap; });
-bindTax('#taxFloor', el => { const t = state.settings.tax; t.region = 'custom'; t.baseFloor = clamp(parseFloat(el.value) || 0, 0, 10000000); el.value = t.baseFloor; });
-bindTax('#taxTier', el => { state.settings.tax.baseTier = el.value; });
-bindTax('#taxTierCustom', el => { state.settings.tax.customBase = clamp(parseFloat(el.value) || 0, 0, 10000000); el.value = state.settings.tax.customBase; });
-bindTax('#taxCoSocial', el => { state.settings.tax.regionProv = 'custom'; state.settings.tax.regionCity = 'custom'; state.settings.tax.coSocialRate = clamp(parseFloat(el.value) || 0, 0, 30); el.value = state.settings.tax.coSocialRate; });
-bindTax('#taxCoFund', el => { state.settings.tax.regionProv = 'custom'; state.settings.tax.regionCity = 'custom'; state.settings.tax.coFundRate = clamp(parseFloat(el.value) || 0, 0, 12); el.value = state.settings.tax.coFundRate; });
+bindTax('#taxCap', el => { const t = D().settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.baseCap = clamp(parseFloat(el.value) || 0, 0, 10000000); el.value = t.baseCap; });
+bindTax('#taxFloor', el => { const t = D().settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.baseFloor = clamp(parseFloat(el.value) || 0, 0, 10000000); el.value = t.baseFloor; });
+bindTax('#taxTier', el => { D().settings.tax.baseTier = el.value; });
+bindTax('#taxTierCustom', el => { D().settings.tax.customBase = clamp(parseFloat(el.value) || 0, 0, 10000000); el.value = D().settings.tax.customBase; });
+bindTax('#taxCoSocial', el => { const t = D().settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.coSocialRate = clamp(parseFloat(el.value) || 0, 0, 30); el.value = t.coSocialRate; });
+bindTax('#taxCoFund', el => { const t = D().settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.coFundRate = clamp(parseFloat(el.value) || 0, 0, 12); el.value = t.coFundRate; });
 
-/* 税前/税后 快捷切换 */
+/* 税前/税后 快捷切换（同样进入草稿，点保存生效） */
 $$('#modeSwitch button').forEach(b => b.addEventListener('click', () => {
-  state.settings.tax.enabled = b.dataset.mode === 'net';
-  markDirty(); save(); renderSettings(); uiTick();
+  D().settings.tax.enabled = b.dataset.mode === 'net';
+  draftChanged();
+  toast(b.dataset.mode === 'net' ? '已切换到税后，记得点「保存」生效～' : '已切换到税前，记得点「保存」生效～');
 }));
+
+/* 保存 / 放弃 */
+$('#btnSave').addEventListener('click', () => {
+  if (!draft) return;
+  state.settings = draft.settings; state.leave = draft.leave; state.pet = draft.pet;
+  draft = null;
+  $('#saveBar').classList.remove('show');
+  markDirty(); save();
+  renderSettings(); renderPetUI(); renderConvert(); renderWish(); renderBreaks(); uiTick();
+  toast('已保存 ✅ 设置生效啦');
+});
+$('#btnRevert').addEventListener('click', () => {
+  draft = null;
+  $('#saveBar').classList.remove('show');
+  renderSettings(); renderPetUI();
+  toast('已放弃修改，还是原来的配置 😌');
+});
 
 $('#btnCal').addEventListener('click', () => refreshCal(false));
 $('#btnExport').addEventListener('click', () => {
@@ -1450,9 +1611,10 @@ $('#fileImport').addEventListener('change', e => {
 
 /* ================= Tab 切换 ================= */
 function switchTab(name) {
+  const page = $('#page-' + name);
+  if (!page) return;
   $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.page === name));
   $$('.page').forEach(p => p.classList.toggle('hidden', p.id !== 'page-' + name));
-  const page = $('#page-' + name);
   page.style.animation = 'none'; void page.offsetWidth; page.style.animation = '';
   $('#main').scrollTop = 0;
 }
@@ -1501,6 +1663,7 @@ function uiTick() {
   }
   renderToday(cents, now, st);
   renderLeave(now);
+  document.querySelector('.tab[data-page="rest"]').classList.toggle('live', !!state.activeBreak);  // 摸鱼计时中 → 图标坐圆盘浮起
   if (state.activeBreak) renderBreakLive(now);
 }
 setInterval(uiTick, 200);

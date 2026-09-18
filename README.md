@@ -29,8 +29,8 @@
 
 ## 🚀 快速开始
 
-- **在线版**：<https://immkf3.github.io/Mocent/web/SalaryDance.html>
-- **本地运行**：直接双击打开 `web/SalaryDance.html`，或 `cd web && python -m http.server 8642` 后访问 `http://127.0.0.1:8642/SalaryDance.html`
+- **在线版**：<https://immkf3.github.io/Mocent/>
+- **本地运行**：直接双击打开 `web/index.html`，或 `cd web && python -m http.server 8642` 后访问 `http://127.0.0.1:8642/`
 
 打开后在「设置」里填上月薪和作息即可。手机浏览器打开可"添加到主屏幕"当轻 App 使用。
 
@@ -51,14 +51,14 @@
 ## 📁 目录结构
 
 ```
-web/               # 网页版（单文件 + PWA，零依赖）
-  SalaryDance.html
+web/               # 网页版
+  index.html
   manifest.webmanifest
-  regions.json     # 全国地区五险一金参考参数（在线更新源）
-  icon-*.png       # 浅色 / 深色图标
-android/           # 安卓原生版（Kotlin，零第三方依赖）
+  regions.json     # 地区参数
+  icon-*.png
+android/           # 安卓版
   app/src/main/java/com/salarydance/app/
-docs/              # README 展示图
+docs/              # 展示图
 ```
 
 ## 📲 安卓版
@@ -75,7 +75,7 @@ docs/              # README 展示图
 
 > 注意：`android/salarydance.keystore` 与 `android/keystore.properties` 已被 gitignore，请自行备份——签名丢了将无法覆盖安装旧版本。
 
-## 🍎 iOS
+## 🍎 iOS版
 
 iPhone / iPad 可直接使用网页版（Safari 打开 → 添加到主屏幕）。后续会根据实际情况考虑增加 iOS 适配。
 

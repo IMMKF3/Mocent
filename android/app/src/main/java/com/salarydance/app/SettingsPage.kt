@@ -53,6 +53,12 @@ class SettingsPage(private val act: MainActivity) {
         "东莞" to doubleArrayOf(4546.0, 26421.0, 10.2, 21.0, 12.0, 12.0))
 
     val view: View = build()
+    private lateinit var saveBar: LinearLayout
+
+    /** 显示"有未保存的更改"保存条 */
+    fun showSaveBar(show: Boolean) {
+        saveBar.visibility = if (show) View.VISIBLE else View.GONE
+    }
 
     private lateinit var setSalary: EditText
     private lateinit var setDays: EditText
@@ -102,6 +108,33 @@ class SettingsPage(private val act: MainActivity) {
         val c = act
         val root = pageRoot(c)
 
+        // ---- 保存条（有未保存更改时出现） ----
+        saveBar = LinearLayout(c).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            background = Ui.roundBg(Color.WHITE, Ui.dp(c, 16).toFloat(),
+                Color.parseColor("#f3ddc2"), Ui.dp(c, 1.5f).toInt().toFloat())
+            setPadding(Ui.dp(c, 14), Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8))
+            visibility = View.GONE
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = Ui.dp(c, 14) }
+        }
+        saveBar.addView(Ui.text(c, 12, Ui.BRAND_DEEP, true).apply {
+            text = "✏️ 有未保存的更改"
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        val revertBtn = Ui.btn(c, "放弃", ghost = true)
+        revertBtn.setOnClickListener { act.revertEdit() }
+        saveBar.addView(revertBtn, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { marginEnd = Ui.dp(c, 6) })
+        val saveBtn = Ui.btn(c, "保存")
+        saveBtn.setOnClickListener { act.saveEdit() }
+        saveBar.addView(saveBtn, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        root.addView(saveBar)
+
         // ---- 收入与作息 ----
         val card1 = Ui.card(c)
         card1.addView(Ui.cardTitle(c, "收入与作息"))
@@ -133,8 +166,8 @@ class SettingsPage(private val act: MainActivity) {
                     if (mute || pos == lastProvPos) return
                     lastProvPos = pos
                     val prov = if (pos == 0) "custom" else PROV.keys.toList()[pos - 1]
-                    st().tax.regionProv = prov
-                    st().tax.regionCity = if (prov == "custom") "custom" else (PROV_CITIES[prov]?.first() ?: "custom")
+                    es().tax.regionProv = prov
+                    es().tax.regionCity = if (prov == "custom") "custom" else (PROV_CITIES[prov]?.first() ?: "custom")
                     applyRegionSelection()
                 }
                 override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
@@ -147,11 +180,11 @@ class SettingsPage(private val act: MainActivity) {
                 override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) {
                     if (mute || pos == lastCityPos) return
                     lastCityPos = pos
-                    val cities = PROV_CITIES[st().tax.regionProv] ?: emptyList()
+                    val cities = PROV_CITIES[act.viewSettings().tax.regionProv] ?: emptyList()
                     if (pos == 0) {
-                        st().tax.regionProv = "custom"; st().tax.regionCity = "custom"
+                        es().tax.regionProv = "custom"; es().tax.regionCity = "custom"
                     } else {
-                        st().tax.regionCity = cities.getOrElse(pos - 1) { return }
+                        es().tax.regionCity = cities.getOrElse(pos - 1) { return }
                     }
                     applyRegionSelection()
                 }
@@ -172,7 +205,7 @@ class SettingsPage(private val act: MainActivity) {
         taxTier.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) {
                 if (mute) return
-                act.st.settings.tax.baseTier = TIER_VALUES[pos]
+                es().tax.baseTier = TIER_VALUES[pos]
                 commitTax()
             }
             override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
@@ -226,7 +259,7 @@ class SettingsPage(private val act: MainActivity) {
             onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) {
                     if (mute) return
-                    st().remindMin = listOf(30, 45, 60)[pos]
+                    es().remindMin = listOf(30, 45, 60)[pos]
                     act.save()
                 }
                 override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
@@ -304,10 +337,10 @@ class SettingsPage(private val act: MainActivity) {
                 val v = "%02d:%02d".format(hh, mm)
                 e.setText(v)
                 when (e) {
-                    setStart -> st().start = v
-                    setEnd -> st().end = v
-                    setLunchStart -> st().lunchStart = v
-                    setLunchEnd -> st().lunchEnd = v
+                    setStart -> es().start = v
+                    setEnd -> es().end = v
+                    setLunchStart -> es().lunchStart = v
+                    setLunchEnd -> es().lunchEnd = v
                 }
                 commitTax()
             }, cur / 60, cur % 60, true).show()
@@ -316,7 +349,8 @@ class SettingsPage(private val act: MainActivity) {
         return e
     }
 
-    private fun st() = act.st.settings
+    /** 设置写入目标：草稿（未保存不生效），配合 beginEdit 的保存条 */
+    private fun es() = act.editSettings()
 
     /** 所有设置写入后统一走这里：保存 + 重算展示 + 联动其它页 */
     private fun commitTax() {
@@ -343,21 +377,21 @@ class SettingsPage(private val act: MainActivity) {
     }
 
     private fun wire() {
-        setLunch.setOnCheckedChangeListener { _, v -> if (!mute) { st().lunch = v; commitTax() } }
-        setOvertime.setOnCheckedChangeListener { _, v -> if (!mute) { st().overtime = v; commitTax() } }
-        taxOn.setOnCheckedChangeListener { _, v -> if (!mute) { st().tax.enabled = v; commitTax() } }
-        remindOn.setOnCheckedChangeListener { _, v -> if (!mute) { st().remindEnabled = v; act.save() } }
-        ecoSw.setOnCheckedChangeListener { _, v -> if (!mute) { st().eco = v; act.save() } }
+        setLunch.setOnCheckedChangeListener { _, v -> if (!mute) { es().lunch = v; commitTax() } }
+        setOvertime.setOnCheckedChangeListener { _, v -> if (!mute) { es().overtime = v; commitTax() } }
+        taxOn.setOnCheckedChangeListener { _, v -> if (!mute) { es().tax.enabled = v; commitTax() } }
+        remindOn.setOnCheckedChangeListener { _, v -> if (!mute) { es().remindEnabled = v } }
+        ecoSw.setOnCheckedChangeListener { _, v -> if (!mute) { es().eco = v } }
         iconDarkSw.setOnCheckedChangeListener { _, v ->
             if (mute) return@setOnCheckedChangeListener
-            st().iconDark = v
+            es().iconDark = v
             act.applyLauncherIcon(v)
             act.save()
         }
         leavePerUnit.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) {
                 if (mute) return
-                act.st.leave.perDayUnit = if (pos == 0) "hour" else "day"
+                act.editLeave().perDayUnit = if (pos == 0) "hour" else "day"
                 commitTax(); renderComputed()
             }
             override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
@@ -365,34 +399,34 @@ class SettingsPage(private val act: MainActivity) {
         leaveBaseUnit.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) {
                 if (mute) return
-                act.st.leave.baseUnit = if (pos == 0) "day" else "hour"
-                act.st.leave.baseDate = Dates.dateKey(LocalDate.now())
+                act.editLeave().baseUnit = if (pos == 0) "day" else "hour"
+                act.editLeave().baseDate = Dates.dateKey(LocalDate.now())
                 commitTax(); renderComputed()
             }
             override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
         }
 
-        bind(setSalary) { st().salary = it.coerceIn(0.0, 1e8) }
+        bind(setSalary) { es().salary = it.coerceIn(0.0, 1e8) }
         bind(setDays) {
             val v = it.toInt()
-            if (v in 1..31) { st().daysOverride = v; st().daysMonthKey = Dates.monthKey(LocalDate.now()) }
-            else { st().daysOverride = null; renderAll() }
+            if (v in 1..31) { es().daysOverride = v; es().daysMonthKey = Dates.monthKey(LocalDate.now()) }
+            else { es().daysOverride = null; renderAll() }
         }
-        bind(setPayday) { st().payday = it.toInt().coerceIn(1, 31) }
-        bind(taxFund) { st().tax.regionProv = "custom"; st().tax.regionCity = "custom"; st().tax.fundRate = it.coerceIn(0.0, 12.0) }
-        bind(taxSocial) { st().tax.regionProv = "custom"; st().tax.regionCity = "custom"; st().tax.socialRate = it.coerceIn(0.0, 30.0) }
-        bind(taxThreshold) { st().tax.threshold = it.coerceIn(0.0, 1e6) }
-        bind(taxCap) { st().tax.regionProv = "custom"; st().tax.regionCity = "custom"; st().tax.baseCap = it.coerceIn(0.0, 1e7) }
-        bind(taxFloor) { st().tax.regionProv = "custom"; st().tax.regionCity = "custom"; st().tax.baseFloor = it.coerceIn(0.0, 1e7) }
-        bind(taxTierCustom) { st().tax.customBase = it.coerceIn(0.0, 1e7) }
-        bind(taxCoSocial) { st().tax.regionProv = "custom"; st().tax.regionCity = "custom"; st().tax.coSocialRate = it.coerceIn(0.0, 30.0) }
-        bind(taxCoFund) { st().tax.regionProv = "custom"; st().tax.regionCity = "custom"; st().tax.coFundRate = it.coerceIn(0.0, 12.0) }
-        bind(leavePerDay) { act.st.leave.perDay = it.coerceIn(0.0, 24.0) }
+        bind(setPayday) { es().payday = it.toInt().coerceIn(1, 31) }
+        bind(taxFund) { es().tax.regionProv = "custom"; es().tax.regionCity = "custom"; es().tax.fundRate = it.coerceIn(0.0, 12.0) }
+        bind(taxSocial) { es().tax.regionProv = "custom"; es().tax.regionCity = "custom"; es().tax.socialRate = it.coerceIn(0.0, 30.0) }
+        bind(taxThreshold) { es().tax.threshold = it.coerceIn(0.0, 1e6) }
+        bind(taxCap) { es().tax.regionProv = "custom"; es().tax.regionCity = "custom"; es().tax.baseCap = it.coerceIn(0.0, 1e7) }
+        bind(taxFloor) { es().tax.regionProv = "custom"; es().tax.regionCity = "custom"; es().tax.baseFloor = it.coerceIn(0.0, 1e7) }
+        bind(taxTierCustom) { es().tax.customBase = it.coerceIn(0.0, 1e7) }
+        bind(taxCoSocial) { es().tax.regionProv = "custom"; es().tax.regionCity = "custom"; es().tax.coSocialRate = it.coerceIn(0.0, 30.0) }
+        bind(taxCoFund) { es().tax.regionProv = "custom"; es().tax.regionCity = "custom"; es().tax.coFundRate = it.coerceIn(0.0, 12.0) }
+        bind(leavePerDay) { act.editLeave().perDay = it.coerceIn(0.0, 24.0) }
         bind(leaveBase) {
-            act.st.leave.base = it.coerceIn(0.0, 8760.0)
-            act.st.leave.baseDate = Dates.dateKey(LocalDate.now())
+            act.editLeave().base = it.coerceIn(0.0, 8760.0)
+            act.editLeave().baseDate = Dates.dateKey(LocalDate.now())
         }
-        bind(leaveStd) { act.st.leave.stdHours = it.coerceIn(1.0, 24.0) }
+        bind(leaveStd) { act.editLeave().stdHours = it.coerceIn(1.0, 24.0) }
     }
 
     private fun fillCityAdapter(prov: String) {
@@ -401,7 +435,7 @@ class SettingsPage(private val act: MainActivity) {
     }
 
     private fun applyRegionSelection() {
-        val t = st().tax
+        val t = es().tax
         val arr = (if (t.regionCity != "custom") CITY_FIX[t.regionCity] else null)
             ?: PROV[t.regionProv]
         if (arr != null) {
@@ -416,7 +450,7 @@ class SettingsPage(private val act: MainActivity) {
     /** 填充所有输入框（初始化 / 重置后） */
     fun renderAll() {
         mute = true
-        val s = st()
+        val s = act.viewSettings()
         setSalary.setText(fmtIn(s.salary))
         setDays.setText(Pay.monthWorkdays(act.st, LocalDate.now()).toString())
         setPayday.setText(s.payday.toString())
@@ -437,11 +471,12 @@ class SettingsPage(private val act: MainActivity) {
         taxTier.setSelection(TIER_VALUES.indexOf(s.tax.baseTier).coerceAtLeast(0))
         taxTierCustom.setText(fmtIn(s.tax.customBase))
         taxCoSocial.setText(fmtIn(s.tax.coSocialRate)); taxCoFund.setText(fmtIn(s.tax.coFundRate))
-        leavePerDay.setText(fmtIn(act.st.leave.perDay))
-        leavePerUnit.setSelection(if (act.st.leave.perDayUnit == "hour") 0 else 1)
-        leaveBase.setText(fmtIn(act.st.leave.base))
-        leaveBaseUnit.setSelection(if (act.st.leave.baseUnit == "day") 0 else 1)
-        leaveStd.setText(fmtIn(act.st.leave.stdHours))
+        val lv = act.viewLeave()
+        leavePerDay.setText(fmtIn(lv.perDay))
+        leavePerUnit.setSelection(if (lv.perDayUnit == "hour") 0 else 1)
+        leaveBase.setText(fmtIn(lv.base))
+        leaveBaseUnit.setSelection(if (lv.baseUnit == "day") 0 else 1)
+        leaveStd.setText(fmtIn(lv.stdHours))
         remindOn.isChecked = s.remindEnabled
         remindSpin.setSelection(listOf(30, 45, 60).indexOf(s.remindMin).coerceAtLeast(0))
         ecoSw.isChecked = s.eco
@@ -453,7 +488,7 @@ class SettingsPage(private val act: MainActivity) {
 
     /** 只刷新计算型文案与联动（不动输入框，避免打断编辑） */
     fun renderComputed() {
-        val s = st()
+        val s = act.viewSettings()
         val tier = TIER_VALUES.getOrElse(taxTier.selectedItemPosition) { "full" }
         taxTierCustomField.visibility = if (tier == "custom") View.VISIBLE else View.GONE
 
@@ -482,7 +517,7 @@ class SettingsPage(private val act: MainActivity) {
             "节假日数据：已在线更新（holiday-cn · ${java.text.SimpleDateFormat("yyyy/M/d", java.util.Locale.CHINA).format(java.util.Date(cr.fetchedAt))}），与内置数据自动合并"
         else "节假日数据：内置 2026 离线可用，联网时自动更新"
 
-        val L = act.st.leave
+        val L = act.viewLeave()
         val perDayH = L.perDay * (if (L.perDayUnit == "day") L.stdHours else 1.0)
         leaveBaseNote.text = if (L.baseDate != null)
             "余额基准日：${L.baseDate}（当天不再重复累计，次日起每个工作日自动 +${String.format("%.2f", perDayH)} 小时）"

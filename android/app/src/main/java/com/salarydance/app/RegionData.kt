@@ -13,7 +13,7 @@ import java.net.URL
  * 数组顺序: [基数下限, 基数上限, 个人社保%, 公司社保%, 个人公积金%, 公司公积金%]
  */
 object RegionData {
-    const val REMOTE_URL = "https://immkf3.github.io/Mocent/web/regions.json"
+    const val REMOTE_URL = "https://immkf3.github.io/Mocent/regions.json"
 
     private val DEFAULT_PROV: Map<String, DoubleArray> = linkedMapOf(
         "北京" to doubleArrayOf(7162.0, 35811.0, 10.5, 26.7, 12.0, 12.0),

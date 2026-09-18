@@ -127,6 +127,39 @@ object Pay {
     fun todayEarnedCents(st: State, d: LocalDate, t: LocalTime): Long =
         Math.round(paidElapsedMin(st, d, t) * 60.0 * perSec(st, d) * 100.0)
 
+    /** 今日计薪分钟区间（时钟坐标，午休与工作时间外不算） */
+    fun paidWindowsMin(s: Settings): List<Pair<Double, Double>> {
+        val start = Dates.toMin(s.start).toDouble(); val end = Dates.toMin(s.end).toDouble()
+        val w = mutableListOf<Pair<Double, Double>>()
+        var hasLunch = false
+        if (s.lunch) {
+            val l0 = maxOf(Dates.toMin(s.lunchStart).toDouble(), start)
+            val l1 = minOf(Dates.toMin(s.lunchEnd).toDouble(), end)
+            if (l1 > l0) { w.add(start to l0); w.add(l1 to end); hasLunch = true }
+        }
+        if (!hasLunch && end > start) w.add(start to end)
+        if (s.overtime) w.add(end to 24.0 * 60.0)
+        return w
+    }
+
+    /** 摸鱼时段与计薪时间重叠的秒数（工作时间外为 0，跨天兜底为 0） */
+    fun paidBreakSec(st: State, startMs: Long, endMs: Long): Double {
+        val zone = java.time.ZoneId.systemDefault()
+        val d0 = java.time.Instant.ofEpochMilli(startMs).atZone(zone).toLocalDate()
+        val d1 = java.time.Instant.ofEpochMilli(endMs).atZone(zone).toLocalDate()
+        if (!Holidays.isWorkday(d0) || d0 != d1) return 0.0
+        val t0 = java.time.Instant.ofEpochMilli(startMs).atZone(zone).toLocalTime()
+        val t1 = java.time.Instant.ofEpochMilli(endMs).atZone(zone).toLocalTime()
+        val a = t0.hour * 60.0 + t0.minute + t0.second / 60.0 + t0.nano / 6e10
+        val b = t1.hour * 60.0 + t1.minute + t1.second / 60.0 + t1.nano / 6e10
+        var sec = 0.0
+        for ((w0, w1) in paidWindowsMin(st.settings)) {
+            val o = minOf(b, w1) - maxOf(a, w0)
+            if (o > 0) sec += o * 60.0
+        }
+        return maxOf(0.0, sec)
+    }
+
     /** 距发薪日天数（当天为 0） */
     fun daysToPayday(st: State, d: LocalDate): Int {
         val p = (st.settings.payday).coerceIn(1, 31).let { minOf(it, d.lengthOfMonth()) }

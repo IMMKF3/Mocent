@@ -284,14 +284,13 @@ class TodayPage(private val act: MainActivity) {
     }
 
     private fun setMode(net: Boolean) {
-        act.st.settings.tax.enabled = net
-        act.save()
+        act.editSettings().tax.enabled = net
         act.settingsPage.renderComputed()
         act.tickNow()
     }
 
     fun renderSyncModeSwitch() {
-        val net = act.st.settings.tax.enabled
+        val net = act.viewSettings().tax.enabled
         for ((b, active) in listOf(modeGross to !net, modeNet to net)) {
             b.setTextColor(if (active) Ui.BRAND_DEEP else Ui.SUB)
             b.background = if (active) Ui.roundBg(Color.WHITE, Ui.dp(act, 999).toFloat()) else null
@@ -300,6 +299,7 @@ class TodayPage(private val act: MainActivity) {
 
     fun addFloater(text: String) {
         val c = act
+        while (floatersLayer.childCount >= 5) floatersLayer.removeViewAt(0)   // 同时最多 5 个
         val f = Ui.text(c, 13, Ui.GREEN, true).apply { this.text = text }
         val lp = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -540,6 +540,7 @@ class RestPage(private val act: MainActivity) {
     val view: View = build()
     private lateinit var timer: TextView
     private lateinit var cost: TextView
+    private lateinit var note: TextView
     private lateinit var bigBtn: TextView
     private lateinit var totalLine: TextView
     private lateinit var list: LinearLayout
@@ -561,9 +562,17 @@ class RestPage(private val act: MainActivity) {
             text = "这一段摸鱼，对应计薪 ¥0.00"
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = Ui.dp(c, 6); bottomMargin = Ui.dp(c, 18) }
+            ).apply { topMargin = Ui.dp(c, 6) }
         }
         card.addView(cost)
+        note = Ui.text(c, 11, Color.parseColor("#b8a88f")).apply {
+            gravity = Gravity.CENTER
+            visibility = View.GONE
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = Ui.dp(c, 4); bottomMargin = Ui.dp(c, 14) }
+        }
+        card.addView(note)
         bigBtn = Ui.text(c, 17, Color.WHITE, true).apply {
             gravity = Gravity.CENTER
             text = "开始\n摸鱼"
@@ -574,7 +583,7 @@ class RestPage(private val act: MainActivity) {
             gravity = Gravity.CENTER })
         card.addView(Ui.text(c, 12, Color.parseColor("#b8a88f")).apply {
             gravity = Gravity.CENTER
-            text = "摸鱼时工资照常在涨，这里只是换个角度看看自己的时间 😌\n开始休息点一下，结束休息再点一下。"
+            text = "摸鱼时工资照常在涨，这里只是换个角度看看自己的时间 😌\n计时随时可以，计薪只落在工作时间里。"
             setPadding(0, Ui.dp(c, 16), 0, 0)
         })
         root.addView(card)
@@ -591,9 +600,22 @@ class RestPage(private val act: MainActivity) {
     var isRunning: Boolean = false
         private set
 
+    /** 工作时间外开始摸鱼的活泼提示（计时照跑，不计薪） */
+    private fun breakHint(status: Status): String? = when (status) {
+        Status.BEFORE -> "还没上班就开始摸鱼？这份松弛感先存着，现在不算钱哦 🛋️"
+        Status.LUNCH -> "午休摸鱼不计薪～先干饭，米饭才是真的补给 🍚"
+        Status.AFTER -> "都下班啦！计时照跑，钱一分不涨，纯纯用爱摸鱼 🌙"
+        Status.WEEKEND -> "今天不上班！摸的是快乐鱼，不带薪的那种 🎣"
+        Status.HOLIDAY -> "法定节假日摸鱼：不涨钱，但快乐是足额发放的 🎉"
+        else -> null
+    }
+
     private fun toggle() {
         val st = act.st
         if (st.activeBreak == null) {
+            val hint = breakHint(Pay.statusOf(st, LocalDate.now(), LocalTime.now()))
+            if (hint != null)
+                android.widget.Toast.makeText(act, hint, android.widget.Toast.LENGTH_LONG).show()
             st.activeBreak = System.currentTimeMillis()
             isRunning = true
             bigBtn.text = "结束\n摸鱼"
@@ -602,7 +624,8 @@ class RestPage(private val act: MainActivity) {
             act.say(Pets.line(st, "breakStart") ?: "")
         } else {
             val s = st.activeBreak!!
-            val costV = (System.currentTimeMillis() - s) / 1000.0 * Pay.perSec(st, LocalDate.now())
+            val paidSec = Pay.paidBreakSec(st, s, System.currentTimeMillis())
+            val costV = paidSec * Pay.perSec(st, LocalDate.now())
             st.breaks.add(BreakRec(s, System.currentTimeMillis()))
             st.activeBreak = null
             isRunning = false
@@ -610,6 +633,7 @@ class RestPage(private val act: MainActivity) {
             bigBtn.text = "开始\n摸鱼"
             bigBtn.background = Ui.gradBg(Color.parseColor("#8fd3ae"), Ui.GREEN, Ui.dp(act, 55).toFloat())
             timer.text = "00:00"; cost.text = "这一段摸鱼，对应计薪 ¥0.00"
+            note.visibility = View.GONE
             act.say(Pets.line(st, "breakEnd", "¥" + Fmt.yuan2(costV)) ?: "")
             renderRecords()
         }
@@ -618,9 +642,22 @@ class RestPage(private val act: MainActivity) {
 
     fun renderLive(nowMs: Long) {
         val s = act.st.activeBreak ?: return
+        val st = act.st
         val el = (nowMs - s) / 1000.0
+        val paid = Pay.paidBreakSec(st, s, nowMs)
         timer.text = Fmt.pad2((el / 60).toInt()) + ":" + Fmt.pad2((el % 60).toInt())
-        cost.text = "这一段摸鱼，对应计薪 ¥" + Fmt.yuan2(el * Pay.perSec(act.st, LocalDate.now()))
+        cost.text = "这一段摸鱼，对应计薪 ¥" + Fmt.yuan2(paid * Pay.perSec(st, LocalDate.now()))
+        when {
+            paid <= 0 -> {
+                note.text = "⏰ 现在不在计薪时段：只帮你计时，不算钱～"
+                note.visibility = View.VISIBLE
+            }
+            paid < el - 1 -> {
+                note.text = "⏰ 摸出计时时段啦，只有落在工作时间里的部分才计薪"
+                note.visibility = View.VISIBLE
+            }
+            else -> note.visibility = View.GONE
+        }
     }
 
     fun resetUi() {
@@ -628,6 +665,7 @@ class RestPage(private val act: MainActivity) {
         bigBtn.text = "开始\n摸鱼"
         bigBtn.background = Ui.gradBg(Color.parseColor("#8fd3ae"), Ui.GREEN, Ui.dp(act, 55).toFloat())
         timer.text = "00:00"; cost.text = "这一段摸鱼，对应计薪 ¥0.00"
+        note.visibility = View.GONE
     }
 
     /** 重启/跨日后恢复按钮状态 */
@@ -644,10 +682,10 @@ class RestPage(private val act: MainActivity) {
     fun renderRecords() {
         val c = act
         val st = c.st
-        val totalSec = st.breaks.sumOf { (it.e - it.s) / 1000.0 }
-        val totalCost = totalSec * Pay.perSec(st, LocalDate.now())
+        val totalPaid = st.breaks.sumOf { Pay.paidBreakSec(st, it.s, it.e) }
+        val totalCost = totalPaid * Pay.perSec(st, LocalDate.now())
         totalLine.text = if (st.breaks.isNotEmpty())
-            "今日摸鱼记录 · 合计 ${fmtDur(totalSec)} ≈ ¥${Fmt.yuan2(totalCost)}" else "今日摸鱼记录"
+            "今日摸鱼记录 · 合计 ${fmtDur(totalPaid)}（计薪时段）≈ ¥${Fmt.yuan2(totalCost)}" else "今日摸鱼记录"
         list.removeAllViews()
         if (st.breaks.isEmpty() && st.activeBreak == null) {
             list.addView(Ui.text(c, 13, Ui.SUB).apply {
@@ -659,6 +697,7 @@ class RestPage(private val act: MainActivity) {
         }
         for (b in st.breaks.asReversed()) {
             val sec = (b.e - b.s) / 1000.0
+            val paid = Pay.paidBreakSec(st, b.s, b.e)
             val row = LinearLayout(c).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
@@ -666,10 +705,15 @@ class RestPage(private val act: MainActivity) {
             }
             val left = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
             left.addView(Ui.text(c, 14, Ui.INK).apply { text = fmtHMS(b.s) + " – " + fmtHMS(b.e) })
-            left.addView(Ui.text(c, 12, Ui.SUB).apply { text = fmtDur(sec) })
+            left.addView(Ui.text(c, 12, Ui.SUB).apply {
+                text = when {
+                    paid <= 0 -> "${fmtDur(sec)} · 工作时间外"
+                    paid < sec - 1 -> "${fmtDur(sec)} · 计薪 ${fmtDur(paid)}"
+                    else -> fmtDur(sec)
+                } })
             row.addView(left, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             row.addView(Ui.text(c, 14, Ui.GREEN, true).apply {
-                text = "≈ ¥" + Fmt.yuan2(sec * Pay.perSec(st, LocalDate.now())) })
+                text = if (paid <= 0) "未计薪" else "≈ ¥" + Fmt.yuan2(paid * Pay.perSec(st, LocalDate.now())) })
             list.addView(row)
         }
     }
@@ -898,8 +942,9 @@ class PetPage(private val act: MainActivity) {
                 listOf("每 10 分钟", "每 15 分钟", "每 30 分钟", "每 60 分钟"))
             onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                    act.st.pet.reportMin = listOf(10, 15, 30, 60)[pos]
-                    act.save()
+                    val v2 = listOf(10, 15, 30, 60)[pos]
+                    if (v2 == act.viewPet().reportMin) return   // 值未变不建草稿（渲染期 setSelection 会触发一次）
+                    act.editPet().reportMin = v2
                 }
                 override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
             }
@@ -915,26 +960,27 @@ class PetPage(private val act: MainActivity) {
 
     fun renderPetUI() {
         val st = act.st
-        val p = Pets.byId(st.pet.id)
+        val vp = act.viewPet()                       // 配置显示草稿优先
+        val p = Pets.byId(vp.id)
         big.text = p.emoji
         name.text = p.name
         desc.text = p.tag
-        act.dockEmojiView().text = p.emoji
+        act.dockEmojiView().text = Pets.byId(st.pet.id).emoji   // 首页 Dock 永远显示已保存的搭子
         swWater.setOnCheckedChangeListener(null)
         swMove.setOnCheckedChangeListener(null)
         swOvertime.setOnCheckedChangeListener(null)
-        reportSpin.setSelection(listOf(10, 15, 30, 60).indexOf(st.pet.reportMin).coerceAtLeast(0))
-        swWater.isChecked = st.pet.water
-        swMove.isChecked = st.pet.move
-        swOvertime.isChecked = st.pet.overtimeCare
-        swWater.setOnCheckedChangeListener { _, v -> st.pet.water = v; act.save() }
-        swMove.setOnCheckedChangeListener { _, v -> st.pet.move = v; act.save() }
-        swOvertime.setOnCheckedChangeListener { _, v -> st.pet.overtimeCare = v; act.save() }
+        reportSpin.setSelection(listOf(10, 15, 30, 60).indexOf(vp.reportMin).coerceAtLeast(0))
+        swWater.isChecked = vp.water
+        swMove.isChecked = vp.move
+        swOvertime.isChecked = vp.overtimeCare
+        swWater.setOnCheckedChangeListener { _, v -> act.editPet().water = v }
+        swMove.setOnCheckedChangeListener { _, v -> act.editPet().move = v }
+        swOvertime.setOnCheckedChangeListener { _, v -> act.editPet().overtimeCare = v }
         grid.removeAllViews()
         val order = Pets.ALL.map { it.id }
         val gc = grid.context
         for (pet in Pets.ALL) {
-            val sel = st.pet.id == pet.id
+            val sel = vp.id == pet.id
             val cell = LinearLayout(gc).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
@@ -954,7 +1000,7 @@ class PetPage(private val act: MainActivity) {
             cell.addView(Ui.text(gc, 10, Ui.SUB).apply {
                 gravity = Gravity.CENTER; Ui.ellipsize(this); text = pet.tag })
             cell.setOnClickListener {
-                if (st.pet.id != pet.id) select(pet.id)
+                if (vp.id != pet.id) select(pet.id)
             }
             grid.addView(cell)
         }
@@ -967,16 +1013,15 @@ class PetPage(private val act: MainActivity) {
     }
 
     private fun select(id: String) {
-        val st = act.st
-        st.pet.id = id
-        act.save()
+        if (act.viewPet().id == id) return
+        act.editPet().id = id
         renderPetUI()
-        act.say(Pets.line(st, act.curStatusKind()) ?: (Pets.byId(id).name + " 上线啦～"))
+        act.say(Pets.line(act.st, act.curStatusKind()) ?: (Pets.byId(id).name + " 上线啦～（记得点保存生效）"))
     }
 
     private fun move(dir: Int) {
         val order = Pets.ALL.map { it.id }
-        val i = order.indexOf(act.st.pet.id)
+        val i = order.indexOf(act.viewPet().id)
         select(order[(i + dir + order.size) % order.size])
     }
 }

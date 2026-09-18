@@ -66,6 +66,13 @@ object Ui {
         return g
     }
 
+    /** 圆形渐变（摸鱼凸起圆盘用） */
+    fun ovalGradBg(c1: Int, c2: Int): GradientDrawable {
+        val g = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(c1, c2))
+        g.shape = GradientDrawable.OVAL
+        return g
+    }
+
     fun text(c: Context, sizeSp: Int, color: Int, bold: Boolean = false): TextView =
         TextView(c).apply {
             setTextColor(color)
