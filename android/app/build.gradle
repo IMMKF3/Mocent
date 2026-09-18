@@ -11,8 +11,8 @@ android {
         applicationId "com.salarydance.app"
         minSdk 26
         targetSdk 34
-        versionCode 9
-        versionName "1.1.0"
+        versionCode 10
+        versionName "1.2.0"
     }
 
     // 签名密钥通过 android/keystore.properties 提供（不入库）；缺失时 release 回退为未签名

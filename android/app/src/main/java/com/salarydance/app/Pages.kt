@@ -284,7 +284,9 @@ class TodayPage(private val act: MainActivity) {
     }
 
     private fun setMode(net: Boolean) {
-        act.editSettings().tax.enabled = net
+        act.st.settings.tax.enabled = net                       // 今日页直接生效，不经草稿
+        act.draft?.settings?.tax?.enabled = net                 // 有草稿时同步，避免保存草稿时被旧值覆盖
+        act.save()
         act.settingsPage.renderComputed()
         act.tickNow()
     }
@@ -323,6 +325,7 @@ class TodayPage(private val act: MainActivity) {
         chipText.setTextColor(meta.second)
         chipDot.background = Ui.ovalBg(meta.second)
 
+        dockEmoji.text = Pets.byId(act.st.pet.id).emoji
         renderSyncModeSwitch()
         rateHour.text = "¥" + Fmt.yuan2(Pay.perHour(st, d))
         rateMin.text = "¥" + Fmt.yuan2(Pay.perMin(st, d))
@@ -860,168 +863,3 @@ class LeavePage(private val act: MainActivity) {
 }
 
 // ==================== 搭子 ====================
-
-class PetPage(private val act: MainActivity) {
-    val view: View = build()
-    private lateinit var big: TextView
-    private lateinit var name: TextView
-    private lateinit var desc: TextView
-    private lateinit var bubble: TextView
-    private lateinit var grid: LinearLayout
-    private lateinit var reportSpin: Spinner
-    private lateinit var swWater: Switch
-    private lateinit var swMove: Switch
-    private lateinit var swOvertime: Switch
-
-    private fun build(): View {
-        val c = act
-        val root = pageRoot(c)
-
-        val stage = Ui.card(c)
-        val row = LinearLayout(c).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
-        val prev = Ui.text(c, 20, Ui.TAB_OFF).apply {
-            gravity = Gravity.CENTER
-            text = "‹"
-            background = Ui.roundBg(Color.WHITE, Ui.dp(c, 17).toFloat())
-        }
-        prev.setOnClickListener { move(-1) }
-        row.addView(prev, LinearLayout.LayoutParams(Ui.dp(c, 34), Ui.dp(c, 34)))
-        big = Ui.text(c, 70, Ui.INK).apply {
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        big.setOnClickListener {
-            big.animate().scaleX(1.15f).scaleY(1.15f).setDuration(120).withEndAction {
-                big.animate().scaleX(1f).scaleY(1f).setDuration(120).start()
-            }.start()
-            act.poke()
-        }
-        row.addView(big)
-        val next = Ui.text(c, 20, Ui.TAB_OFF).apply {
-            gravity = Gravity.CENTER
-            text = "›"
-            background = Ui.roundBg(Color.WHITE, Ui.dp(c, 17).toFloat())
-        }
-        next.setOnClickListener { move(1) }
-        row.addView(next, LinearLayout.LayoutParams(Ui.dp(c, 34), Ui.dp(c, 34)))
-        stage.addView(row)
-        name = Ui.text(c, 19, Ui.INK, true).apply {
-            gravity = Gravity.CENTER; setPadding(0, Ui.dp(c, 6), 0, 0) }
-        stage.addView(name)
-        desc = Ui.text(c, 13, Ui.SUB).apply { gravity = Gravity.CENTER }
-        stage.addView(desc)
-        bubble = Ui.text(c, 14, Ui.BUBBLE_TEXT).apply {
-            background = Ui.roundBg(Color.WHITE, Ui.dp(c, 16).toFloat(),
-                Color.parseColor("#f3e7d0"), Ui.dp(c, 1.5f).toInt().toFloat())
-            setPadding(Ui.dp(c, 13), Ui.dp(c, 10), Ui.dp(c, 13), Ui.dp(c, 10))
-            text = "…"
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = Ui.dp(c, 14) }
-        }
-        stage.addView(bubble)
-        root.addView(stage)
-
-        val selectCard = Ui.card(c)
-        selectCard.addView(Ui.cardTitle(c, "选择你的桌边搭子"))
-        val scroll = HorizontalScrollView(c).apply { isHorizontalScrollBarEnabled = false }
-        grid = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL }
-        scroll.addView(grid)
-        selectCard.addView(scroll)
-        root.addView(selectCard)
-
-        val cfgCard = Ui.card(c)
-        cfgCard.addView(Ui.cardTitle(c, "它的工作安排"))
-        reportSpin = Spinner(c).apply {
-            adapter = android.widget.ArrayAdapter(c, android.R.layout.simple_spinner_dropdown_item,
-                listOf("每 10 分钟", "每 15 分钟", "每 30 分钟", "每 60 分钟"))
-            onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                    val v2 = listOf(10, 15, 30, 60)[pos]
-                    if (v2 == act.viewPet().reportMin) return   // 值未变不建草稿（渲染期 setSelection 会触发一次）
-                    act.editPet().reportMin = v2
-                }
-                override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
-            }
-        }
-        cfgCard.addView(Ui.field(c, "定期汇报收入", reportSpin))
-        swWater = Ui.switch(c); swMove = Ui.switch(c); swOvertime = Ui.switch(c)
-        cfgCard.addView(Ui.field(c, "提醒喝水", swWater))
-        cfgCard.addView(Ui.field(c, "提醒起来活动", swMove))
-        cfgCard.addView(Ui.field(c, "加班时劝你休息", swOvertime))
-        root.addView(cfgCard)
-        return root
-    }
-
-    fun renderPetUI() {
-        val st = act.st
-        val vp = act.viewPet()                       // 配置显示草稿优先
-        val p = Pets.byId(vp.id)
-        big.text = p.emoji
-        name.text = p.name
-        desc.text = p.tag
-        act.dockEmojiView().text = Pets.byId(st.pet.id).emoji   // 首页 Dock 永远显示已保存的搭子
-        swWater.setOnCheckedChangeListener(null)
-        swMove.setOnCheckedChangeListener(null)
-        swOvertime.setOnCheckedChangeListener(null)
-        reportSpin.setSelection(listOf(10, 15, 30, 60).indexOf(vp.reportMin).coerceAtLeast(0))
-        swWater.isChecked = vp.water
-        swMove.isChecked = vp.move
-        swOvertime.isChecked = vp.overtimeCare
-        swWater.setOnCheckedChangeListener { _, v -> act.editPet().water = v }
-        swMove.setOnCheckedChangeListener { _, v -> act.editPet().move = v }
-        swOvertime.setOnCheckedChangeListener { _, v -> act.editPet().overtimeCare = v }
-        grid.removeAllViews()
-        val order = Pets.ALL.map { it.id }
-        val gc = grid.context
-        for (pet in Pets.ALL) {
-            val sel = vp.id == pet.id
-            val cell = LinearLayout(gc).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                background = if (sel) Ui.roundBg(Color.parseColor("#fff6ea"), Ui.dp(gc, 16).toFloat(),
-                    Ui.BRAND, Ui.dp(gc, 2).toInt().toFloat())
-                else Ui.roundBg(Color.WHITE, Ui.dp(gc, 16).toFloat(),
-                    Color.parseColor("#f0e4cf"), Ui.dp(gc, 2).toInt().toFloat())
-                setPadding(Ui.dp(gc, 4), Ui.dp(gc, 14), Ui.dp(gc, 4), Ui.dp(gc, 14))
-                layoutParams = LinearLayout.LayoutParams(
-                    Ui.dp(gc, 104), ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { marginEnd = Ui.dp(gc, 10) }
-            }
-            cell.addView(Ui.text(gc, 30, Ui.INK).apply { gravity = Gravity.CENTER; text = pet.emoji })
-            cell.addView(Ui.text(gc, 13, Ui.INK, true).apply {
-                gravity = Gravity.CENTER; text = pet.name
-                setPadding(0, Ui.dp(gc, 6), 0, 0) })
-            cell.addView(Ui.text(gc, 10, Ui.SUB).apply {
-                gravity = Gravity.CENTER; Ui.ellipsize(this); text = pet.tag })
-            cell.setOnClickListener {
-                if (vp.id != pet.id) select(pet.id)
-            }
-            grid.addView(cell)
-        }
-    }
-
-    fun sayToBubble(text: String) {
-        bubble.text = text
-        bubble.alpha = 0.6f
-        bubble.animate().alpha(1f).setDuration(150).start()
-    }
-
-    private fun select(id: String) {
-        if (act.viewPet().id == id) return
-        act.editPet().id = id
-        renderPetUI()
-        act.say(Pets.line(act.st, act.curStatusKind()) ?: (Pets.byId(id).name + " 上线啦～（记得点保存生效）"))
-    }
-
-    private fun move(dir: Int) {
-        val order = Pets.ALL.map { it.id }
-        val i = order.indexOf(act.viewPet().id)
-        select(order[(i + dir + order.size) % order.size])
-    }
-}

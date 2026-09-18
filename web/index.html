@@ -1559,11 +1559,13 @@ bindTax('#taxTierCustom', el => { D().settings.tax.customBase = clamp(parseFloat
 bindTax('#taxCoSocial', el => { const t = D().settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.coSocialRate = clamp(parseFloat(el.value) || 0, 0, 30); el.value = t.coSocialRate; });
 bindTax('#taxCoFund', el => { const t = D().settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.coFundRate = clamp(parseFloat(el.value) || 0, 0, 12); el.value = t.coFundRate; });
 
-/* 税前/税后 快捷切换（同样进入草稿，点保存生效） */
+/* 税前/税后 快捷切换（今日页直接生效，不经草稿） */
 $$('#modeSwitch button').forEach(b => b.addEventListener('click', () => {
-  D().settings.tax.enabled = b.dataset.mode === 'net';
-  draftChanged();
-  toast(b.dataset.mode === 'net' ? '已切换到税后，记得点「保存」生效～' : '已切换到税前，记得点「保存」生效～');
+  const net = b.dataset.mode === 'net';
+  state.settings.tax.enabled = net;
+  if (draft) draft.settings.tax.enabled = net;   // 有草稿时同步，避免之后保存草稿时被旧值覆盖
+  markDirty(); save();
+  toast(b.dataset.mode === 'net' ? '已切换到税后计薪' : '已切换到税前计薪');
 }));
 
 /* 保存 / 放弃 */

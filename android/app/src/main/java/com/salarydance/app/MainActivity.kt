@@ -1,6 +1,9 @@
 package com.salarydance.app
 
 import android.Manifest
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
+import android.animation.ValueAnimator
 import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
@@ -8,7 +11,12 @@ import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -38,8 +46,6 @@ class MainActivity : Activity() {
         private set
     lateinit var leavePage: LeavePage
         private set
-    lateinit var petPage: PetPage
-        private set
     lateinit var settingsPage: SettingsPage
         private set
 
@@ -54,6 +60,7 @@ class MainActivity : Activity() {
     private var pokeCount = 0
     private var lastPokeAt = 0L
     private var lastRemindAt = 0L
+    private var restBreath: ObjectAnimator? = null
 
     private lateinit var scrollView: ScrollView
     private lateinit var pages: Map<String, View>
@@ -115,7 +122,6 @@ class MainActivity : Activity() {
 
     private fun afterConfigChanged() {
         settingsPage.renderAll()
-        petPage.renderPetUI()
         wishPage.renderConvert()
         wishPage.renderList()
         restPage.renderRecords()
@@ -157,7 +163,6 @@ class MainActivity : Activity() {
         st.savedTodayEarned = maxOf(st.savedTodayEarned, cur.toDouble())
 
         settingsPage.renderAll()
-        petPage.renderPetUI()
         wishPage.renderConvert()
         wishPage.renderList()
         restPage.syncActive()
@@ -278,11 +283,10 @@ class MainActivity : Activity() {
         wishPage = WishPage(this)
         restPage = RestPage(this)
         leavePage = LeavePage(this)
-        petPage = PetPage(this)
         settingsPage = SettingsPage(this)
         pages = linkedMapOf(
             "today" to todayPage.view, "wish" to wishPage.view, "rest" to restPage.view,
-            "leave" to leavePage.view, "pet" to petPage.view, "set" to settingsPage.view)
+            "leave" to leavePage.view, "set" to settingsPage.view)
         val pagesBox = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
         pages.values.forEach { pagesBox.addView(it) }
         scrollView = ScrollView(c).apply {
@@ -297,10 +301,9 @@ class MainActivity : Activity() {
         // 底部 Tab
         val defs = listOf(
             Triple("💰", "今日", "today"), Triple("🎁", "心愿", "wish"), Triple("🐟", "摸鱼", "rest"),
-            Triple("🌴", "年假", "leave"), Triple("🐾", "搭子", "pet"), Triple("⚙️", "设置", "set"))
-        val tabbar = LinearLayout(c).apply {
+            Triple("🌴", "年假", "leave"), Triple("⚙️", "设置", "set"))
+        val tabbar = NotchTabbarView(c).apply {
             orientation = LinearLayout.HORIZONTAL
-            background = Ui.roundBg(Color.parseColor("#fffdf9"), 0f)
             setPadding(Ui.dp(c, 8), Ui.dp(c, 6), Ui.dp(c, 8), Ui.dp(c, 6) + insetsBottom())
         }
         val map = LinkedHashMap<String, Pair<TextView, TextView>>()
@@ -313,18 +316,19 @@ class MainActivity : Activity() {
             val e: TextView
             val l: TextView
             if (name == "rest") {
-                // 闲鱼式中央凸起圆钮：56dp 圆盘仅放图标，上浮超出底栏
+                // 闲鱼式中央凸起圆钮：56dp 圆盘仅放 🐟 图标，上浮嵌入底栏缺口
                 cell.clipChildren = false
                 e = Ui.text(c, 24, Color.WHITE).apply {
                     gravity = Gravity.CENTER; text = emoji
                     translationY = -Ui.dp(c, 2).toFloat()   // 视觉居中微调
                 }
-                l = Ui.text(c, 9, Color.WHITE, true).apply { gravity = Gravity.CENTER; text = label }
+                l = e                                        // 圆钮无文字，色值同步复用同一视图
                 val disc = LinearLayout(c).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER
                     clipChildren = false
                     background = Ui.ovalGradBg(Color.parseColor("#ffc06e"), Ui.BRAND)
+                    translationY = -Ui.dp(c, 12).toFloat()
                 }
                 disc.addView(e)
                 disc.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 56), Ui.dp(c, 56))
@@ -479,7 +483,6 @@ class MainActivity : Activity() {
         todayPage.dockBubble.text = text
         todayPage.dockBubble.alpha = 0.6f
         todayPage.dockBubble.animate().alpha(1f).setDuration(150).start()
-        petPage.sayToBubble(text)
     }
 
     /** 戳一戳：连戳 5 下搭子会翻脸 */
@@ -520,7 +523,23 @@ class MainActivity : Activity() {
         restDisc?.let { disc ->
             disc.background = if (active) Ui.ovalGradBg(Color.parseColor("#f87171"), Color.parseColor("#dc2626"))
             else Ui.ovalGradBg(Color.parseColor("#ffc06e"), Ui.BRAND)
-            disc.translationY = -Ui.dp(this, 12).toFloat()
+        }
+        restBreath?.cancel()
+        restBreath = null
+        restDisc?.let { disc ->
+            disc.scaleX = 1f; disc.scaleY = 1f
+            if (active) {
+                restBreath = ObjectAnimator.ofPropertyValuesHolder(
+                    disc,
+                    PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.1f),
+                    PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.1f)
+                ).apply {
+                    duration = 850
+                    repeatCount = ValueAnimator.INFINITE
+                    repeatMode = ValueAnimator.REVERSE
+                    start()
+                }
+            }
         }
     }
 
@@ -539,5 +558,24 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         super.onDestroy()
         BreakEvents.onEndedRemotely = null
+    }
+}
+
+/** 底栏背景：圆角矩形 + 顶中弧形缺口（供凸起圆盘嵌入，CLEAR 抠洞后透出下层） */
+class NotchTabbarView(context: android.content.Context) : LinearLayout(context) {
+    private val barPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#fffdf9") }
+    private val holePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+    }
+
+    init {
+        setWillNotDraw(false)
+        setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
+        canvas.drawRect(rect, barPaint)
+        canvas.drawCircle(width / 2f, 0f, Ui.dp(context, 34).toFloat(), holePaint)
     }
 }

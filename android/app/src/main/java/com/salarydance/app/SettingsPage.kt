@@ -3,6 +3,7 @@ package com.salarydance.app
 import android.app.Activity
 import android.app.TimePickerDialog
 import android.graphics.Color
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -101,6 +102,11 @@ class SettingsPage(private val act: MainActivity) {
     private lateinit var remindSpin: Spinner
     private lateinit var ecoSw: Switch
     private lateinit var iconDarkSw: Switch
+    private lateinit var petGrid: LinearLayout
+    private lateinit var reportSpin: Spinner
+    private lateinit var swWater: Switch
+    private lateinit var swMove: Switch
+    private lateinit var swOvertime: Switch
 
     private var mute = false
 
@@ -285,6 +291,33 @@ class SettingsPage(private val act: MainActivity) {
         cardL.addView(Ui.caption(c).apply {
             text = "切换后桌面图标变为深可可棕色版本（图案相同）。部分桌面启动器需要 1-2 秒刷新，个别需要重启桌面。" })
         root.addView(cardL)
+
+        // ---- 摸鱼搭子 ----
+        val cardP = Ui.card(c)
+        cardP.addView(Ui.cardTitle(c, "🐾 摸鱼搭子"))
+        val petScroll = android.widget.HorizontalScrollView(c).apply { isHorizontalScrollBarEnabled = false }
+        petGrid = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL }
+        petScroll.addView(petGrid)
+        cardP.addView(petScroll)
+        reportSpin = Spinner(c).apply {
+            adapter = android.widget.ArrayAdapter(c, android.R.layout.simple_spinner_dropdown_item,
+                listOf("每 10 分钟", "每 15 分钟", "每 30 分钟", "每 60 分钟"))
+            onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                    if (mute) return
+                    act.editPet().reportMin = listOf(10, 15, 30, 60)[pos]
+                }
+                override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
+            }
+        }
+        cardP.addView(Ui.field(c, "定期汇报收入", reportSpin))
+        swWater = Ui.switch(c); swMove = Ui.switch(c); swOvertime = Ui.switch(c)
+        cardP.addView(Ui.field(c, "提醒喝水", swWater))
+        cardP.addView(Ui.field(c, "提醒起来活动", swMove))
+        cardP.addView(Ui.field(c, "加班时劝你休息", swOvertime))
+        cardP.addView(Ui.caption(c).apply {
+            text = "改动与其它设置一样：点底部「保存」后生效。" })
+        root.addView(cardP)
 
         // ---- 数据 ----
         val card4 = Ui.card(c)
@@ -481,6 +514,7 @@ class SettingsPage(private val act: MainActivity) {
         remindSpin.setSelection(listOf(30, 45, 60).indexOf(s.remindMin).coerceAtLeast(0))
         ecoSw.isChecked = s.eco
         iconDarkSw.isChecked = s.iconDark
+        renderPetSection()
         act.todayPage.renderSyncModeSwitch()
         mute = false
         renderComputed()
@@ -522,6 +556,53 @@ class SettingsPage(private val act: MainActivity) {
         leaveBaseNote.text = if (L.baseDate != null)
             "余额基准日：${L.baseDate}（当天不再重复累计，次日起每个工作日自动 +${String.format("%.2f", perDayH)} 小时）"
         else "首次修改“当前余额”时，会把今天记为基准日，之后自动往上攒。"
+    }
+
+    fun renderPetSection() {
+        val vp = act.viewPet()
+        val p = Pets.byId(vp.id)
+        swWater.setOnCheckedChangeListener(null)
+        swMove.setOnCheckedChangeListener(null)
+        swOvertime.setOnCheckedChangeListener(null)
+        reportSpin.setSelection(listOf(10, 15, 30, 60).indexOf(vp.reportMin).coerceAtLeast(0))
+        swWater.isChecked = vp.water
+        swMove.isChecked = vp.move
+        swOvertime.isChecked = vp.overtimeCare
+        swWater.setOnCheckedChangeListener { _, v -> act.editPet().water = v }
+        swMove.setOnCheckedChangeListener { _, v -> act.editPet().move = v }
+        swOvertime.setOnCheckedChangeListener { _, v -> act.editPet().overtimeCare = v }
+        petGrid.removeAllViews()
+        val gc = petGrid.context
+        for (pet in Pets.ALL) {
+            val sel = vp.id == pet.id
+            val cell = LinearLayout(gc).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = android.view.Gravity.CENTER
+                background = if (sel) Ui.roundBg(Color.parseColor("#fff6ea"), Ui.dp(gc, 16).toFloat(),
+                    Ui.BRAND, Ui.dp(gc, 2).toInt().toFloat())
+                else Ui.roundBg(Color.WHITE, Ui.dp(gc, 16).toFloat(),
+                    Color.parseColor("#f0e4cf"), Ui.dp(gc, 2).toInt().toFloat())
+                setPadding(Ui.dp(gc, 4), Ui.dp(gc, 14), Ui.dp(gc, 4), Ui.dp(gc, 14))
+                layoutParams = LinearLayout.LayoutParams(
+                    Ui.dp(gc, 104), ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { marginEnd = Ui.dp(gc, 10) }
+            }
+            cell.addView(Ui.text(gc, 30, Ui.INK).apply { gravity = Gravity.CENTER; text = pet.emoji })
+            cell.addView(Ui.text(gc, 13, Ui.INK, true).apply {
+                gravity = Gravity.CENTER; text = pet.name
+                setPadding(0, Ui.dp(gc, 6), 0, 0) })
+            cell.addView(Ui.text(gc, 10, Ui.SUB).apply {
+                gravity = Gravity.CENTER; Ui.ellipsize(this); text = pet.tag })
+            cell.setOnClickListener {
+                if (act.viewPet().id != pet.id) {
+                    act.editPet().id = pet.id
+                    renderPetSection()
+                    act.say(Pets.line(act.st, act.curStatusKind())
+                        ?: (Pets.byId(pet.id).name + " 上线啦～（记得点保存生效）"))
+                }
+            }
+            petGrid.addView(cell)
+        }
     }
 
     private fun fmtIn(v: Double): String =
