@@ -6,12 +6,13 @@
 
 > 摸鱼的时候，工资也在涨。实时计薪 · 节假日感知 · 税后计算 · 公司缴纳档位 · 心愿单 · 摸鱼计时 · 年假管理 · 摸鱼搭子
 
-治愈系工资可视化工具：填入月薪和作息，看今天的工资一秒一秒往上涨。**Android 原生（Kotlin）+ 网页版（PWA）** 双端，功能完全对齐。
+治愈系工资可视化工具：填入月薪和作息，看今天的工资一秒一秒往上涨。**Android 原生（Kotlin）+ Windows 桌面版 + 网页版（PWA）** 三端，功能完全对齐。
 
 <p align="center">
   <a href="https://github.com/IMMKF3/Mocent/releases/latest"><img src="https://img.shields.io/github/v/release/IMMKF3/Mocent" alt="Release"/></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" alt="License: MIT"/></a>
   <a href="https://github.com/IMMKF3/Mocent/releases/latest"><img src="https://img.shields.io/badge/Android-8.0%2B-brightgreen" alt="Android 8.0+"/></a>
+  <a href="https://github.com/IMMKF3/Mocent/releases/latest"><img src="https://img.shields.io/badge/Windows-10%2B-blue" alt="Windows 10+"/></a>
   <a href="https://github.com/IMMKF3/Mocent/stargazers"><img src="https://img.shields.io/github/stars/IMMKF3/Mocent" alt="Stars"/></a>
 </p>
 
@@ -51,13 +52,16 @@
 ## 📁 目录结构
 
 ```
-web/               # 网页版
+web/               # 网页版（桌面版共用这一份页面）
   index.html
   manifest.webmanifest
   regions.json     # 地区参数
   icon-*.png
 android/           # 安卓版
   app/src/main/java/com/salarydance/app/
+desktop/           # Windows 桌面版
+  src/Program.cs
+  build.sh
 docs/              # 展示图
 ```
 
@@ -74,6 +78,19 @@ docs/              # 展示图
 自行构建（可选）：仓库自带完整 Gradle 工程，`cd android && gradle assembleRelease` 即可（需 JDK 17 与 Android SDK），产物在 `android/app/build/outputs/apk/release/`。
 
 > 注意：`android/salarydance.keystore` 与 `android/keystore.properties` 已被 gitignore，请自行备份——签名丢了将无法覆盖安装旧版本。
+
+## 🖥️ Windows 桌面版
+
+**正式版下载**：[Releases · Mocent](https://github.com/IMMKF3/Mocent/releases/latest)，两种包任选：
+
+- **便携版** `Mocent-v*.zip`：解压即用，双击 `Mocent\Mocent.exe`，无需安装
+- **安装包** `Mocent-v*-installer.msi`：双击安装（按用户安装、免管理员权限），自动创建开始菜单快捷方式
+
+原生 C# 壳（.NET Framework 系统自带，仅约 1.4MB）+ WebView2 无边框窗口渲染网页版：顶栏即标题栏（拖动移动窗口、双击最大化），右上角集成最小化/最大化/关闭。与网页版共用同一份页面代码，功能永远同步。数据仅存本机（`%LOCALAPPDATA%\Mocent`），卸载重装都不丢设置。
+
+> 需要 Windows 10 及以上（系统自带 WebView2 运行时，一般无需额外安装）。首次运行如遇 SmartScreen 提示，点「更多信息 → 仍要运行」即可（应用未做代码签名）。
+
+自行构建（可选）：`bash desktop/build.sh` 生成便携版，`bash desktop/build.sh msi` 追加生成安装包（系统自带 csc 编译，MSI 需 WiX Toolset 3.14）。
 
 ## 🍎 iOS版
 
