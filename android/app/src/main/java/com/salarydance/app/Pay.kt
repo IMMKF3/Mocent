@@ -42,17 +42,21 @@ object Pay {
         return maxOf(0.0, base)
     }
 
+    /** 公积金开关：关闭后个人/公司公积金比例按 0 参与计算（原值保留，重新打开即恢复） */
+    fun effFundRate(s: Settings): Double = if (s.tax.hasFund) s.tax.fundRate else 0.0
+    fun effCoFundRate(s: Settings): Double = if (s.tax.hasFund) s.tax.coFundRate else 0.0
+
     /** 五险一金个人部分 */
     fun insuranceMonthly(s: Settings): Double =
-        insBase(s) * (s.tax.socialRate + s.tax.fundRate) / 100.0
+        insBase(s) * (s.tax.socialRate + effFundRate(s)) / 100.0
 
     /** 公司缴纳部分（不扣税，隐藏福利） */
     fun companyMonthly(s: Settings): Double =
-        insBase(s) * (s.tax.coSocialRate + s.tax.coFundRate) / 100.0
+        insBase(s) * (s.tax.coSocialRate + effCoFundRate(s)) / 100.0
 
     /** 公积金账户月进账（个人+公司） */
     fun fundMonthlyIn(s: Settings): Double =
-        insBase(s) * (s.tax.fundRate + s.tax.coFundRate) / 100.0
+        insBase(s) * (effFundRate(s) + effCoFundRate(s)) / 100.0
 
     /** 月度个税（估算） */
     fun taxMonthly(s: Settings): Double {
@@ -65,8 +69,16 @@ object Pay {
 
     fun netMonthly(s: Settings): Double = s.salary - insuranceMonthly(s) - taxMonthly(s)
 
-    fun taxFactor(s: Settings): Double =
-        if (s.tax.enabled && s.salary > 0) netMonthly(s) / s.salary else 1.0
+    /** 净额系数：税后计薪把税前金额折算成到手金额的比例。
+     *  mode='net' 直接用「实际到手 ÷ 税前」，绕开比例与税率估算；否则走五险一金 + 个税估算。 */
+    fun netRatio(s: Settings): Double {
+        if (s.salary <= 0) return 1.0
+        if (s.tax.mode == "net" && s.tax.netSalary > 0)
+            return (s.tax.netSalary / s.salary).coerceIn(0.0, 1.0)
+        return maxOf(0.0, netMonthly(s) / s.salary)
+    }
+
+    fun taxFactor(s: Settings): Double = if (s.tax.enabled) netRatio(s) else 1.0
 
     /** 每日计薪工时 = 上班到下班 − 午休 */
     fun paidHours(s: Settings): Double {

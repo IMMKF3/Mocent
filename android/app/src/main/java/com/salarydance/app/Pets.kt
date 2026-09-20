@@ -218,7 +218,11 @@ object Pets {
     }
 
     fun line(st: State, kind: String, extra: String? = null): String? {
-        val lines = byId(st.pet.id).lines[kind] ?: return null
+        var lines = byId(st.pet.id).lines[kind] ?: return null
+        if (Pay.fundMonthlyIn(st.settings) <= 0) {       // 没交公积金时别念「公积金月进 ¥0.00」
+            val noFund = lines.filter { !it.contains("{fund}") }
+            if (noFund.isNotEmpty()) lines = noFund
+        }
         return fill(st, pick(lines), extra)
     }
 }

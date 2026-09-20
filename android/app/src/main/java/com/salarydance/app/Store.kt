@@ -7,6 +7,7 @@ import org.json.JSONObject
 /** 五险一金 · 个税配置（baseTier: full | p80 | p60 | custom） */
 class TaxCfg(
     var enabled: Boolean = false,
+    var hasFund: Boolean = true,         // 公积金开关：关闭后不设比例、不参与计算
     var fundRate: Double = 12.0,
     var socialRate: Double = 10.5,
     var threshold: Double = 5000.0,
@@ -18,6 +19,9 @@ class TaxCfg(
     var regionProv: String = "custom",
     var regionCity: String = "custom",
     var baseFloor: Double = 0.0,
+    var mode: String = "rate",          // rate=按五险一金比例估算 | net=按实际到手金额
+    var netSalary: Double = 0.0,        // 每月实际到手（元/月）
+    var medicalIn: Double = 0.0,        // 医保账户每月到账（元/月，仅展示）
 )
 
 class Settings(
@@ -134,10 +138,11 @@ object Store {
         d.eco = s.eco; d.remindEnabled = s.remindEnabled
         d.remindMin = s.remindMin; d.iconDark = s.iconDark
         val t = d.tax; val x = s.tax
-        t.enabled = x.enabled; t.fundRate = x.fundRate; t.socialRate = x.socialRate
+        t.enabled = x.enabled; t.hasFund = x.hasFund; t.fundRate = x.fundRate; t.socialRate = x.socialRate
         t.threshold = x.threshold; t.baseCap = x.baseCap; t.baseTier = x.baseTier
         t.customBase = x.customBase; t.coSocialRate = x.coSocialRate; t.coFundRate = x.coFundRate
         t.regionProv = x.regionProv; t.regionCity = x.regionCity; t.baseFloor = x.baseFloor
+        t.mode = x.mode; t.netSalary = x.netSalary; t.medicalIn = x.medicalIn
         copyPet(dst.pet, src.pet)
         // 年假只复制攒假规则，使用记录 log 属于流水，保留 dst 自己的
         val dl = dst.leave; val sl = src.leave
@@ -199,13 +204,16 @@ object Store {
             .put("remindMin", m.remindMin)
             .put("iconDark", m.iconDark)
         o.put("tax", JSONObject()
-            .put("enabled", m.tax.enabled).put("fundRate", m.tax.fundRate)
+            .put("enabled", m.tax.enabled).put("hasFund", m.tax.hasFund)
+            .put("fundRate", m.tax.fundRate)
             .put("socialRate", m.tax.socialRate).put("threshold", m.tax.threshold)
             .put("baseCap", m.tax.baseCap).put("baseTier", m.tax.baseTier)
             .put("customBase", m.tax.customBase)
             .put("coSocialRate", m.tax.coSocialRate).put("coFundRate", m.tax.coFundRate)
             .put("regionProv", m.tax.regionProv).put("regionCity", m.tax.regionCity)
-            .put("baseFloor", m.tax.baseFloor))
+            .put("baseFloor", m.tax.baseFloor)
+            .put("mode", m.tax.mode).put("netSalary", m.tax.netSalary)
+            .put("medicalIn", m.tax.medicalIn))
         return o
     }
 
@@ -277,6 +285,7 @@ object Store {
         m.iconDark = o.optBoolean("iconDark", m.iconDark)
         o.optJSONObject("tax")?.let { t ->
             m.tax.enabled = t.optBoolean("enabled", m.tax.enabled)
+            m.tax.hasFund = t.optBoolean("hasFund", m.tax.hasFund)
             m.tax.fundRate = t.optDouble("fundRate", m.tax.fundRate)
             m.tax.socialRate = t.optDouble("socialRate", m.tax.socialRate)
             m.tax.threshold = t.optDouble("threshold", m.tax.threshold)
@@ -288,6 +297,9 @@ object Store {
             m.tax.regionProv = t.optString("regionProv", m.tax.regionProv)
             m.tax.regionCity = t.optString("regionCity", m.tax.regionCity)
             m.tax.baseFloor = t.optDouble("baseFloor", m.tax.baseFloor)
+            m.tax.mode = t.optString("mode", m.tax.mode)
+            m.tax.netSalary = t.optDouble("netSalary", m.tax.netSalary)
+            m.tax.medicalIn = t.optDouble("medicalIn", m.tax.medicalIn)
         }
     }
 

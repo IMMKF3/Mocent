@@ -125,6 +125,25 @@
   .tl-labels{display:flex;justify-content:space-between;font-size:11.5px;color:var(--sub);margin-top:8px}
   .tl-now{text-align:center;font-size:13px;font-weight:700;margin-top:10px;color:#7a6a58}
 
+  /* 首页快捷摸鱼块 */
+  .fish-quick{padding:14px 16px}
+  .fq-row{display:flex;align-items:center;gap:12px}
+  .fq-emoji{font-size:30px;line-height:1;flex:none}
+  .fq-info{flex:1;min-width:0}
+  .fq-title{font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums}
+  .fq-sub{font-size:11.5px;color:var(--sub);margin-top:3px;line-height:1.45}
+  .fq-btn{flex:none;border:none;border-radius:999px;padding:9px 15px;font:inherit;font-size:13px;font-weight:800;
+    cursor:pointer;color:#fff;background:linear-gradient(135deg,#8fd3ae,#2fa36b);
+    box-shadow:0 4px 10px rgba(47,163,107,.32);transition:transform .12s}
+  .fq-btn:active{transform:scale(.94)}
+  .fq-btn.on{background:linear-gradient(135deg,#f39898,#e15554);box-shadow:0 4px 10px rgba(225,85,84,.32)}
+  .fq-live{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-top:12px;padding-top:12px;
+    border-top:1px dashed var(--line)}
+  .fq-timer{font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:1px}
+  .fq-cost{font-size:12.5px;color:var(--sub)}
+  .fq-cost b{color:var(--green);font-variant-numeric:tabular-nums}
+  .fq-note{flex:0 0 100%;text-align:center;margin-top:0}
+
   .pet-dock{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none}
   .pet-emoji{font-size:38px;line-height:1;animation:bob 2.6s ease-in-out infinite;filter:drop-shadow(0 3px 4px rgba(120,90,40,.25))}
   @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-6px) rotate(2deg)}}
@@ -353,6 +372,22 @@
         <div><b id="leaveStat">-</b><span>年假（天）</span></div>
       </div>
 
+      <div class="card fish-quick">
+        <div class="fq-row">
+          <span class="fq-emoji">🐟</span>
+          <div class="fq-info">
+            <div class="fq-title" id="fqTitle">今天还没摸鱼</div>
+            <div class="fq-sub" id="fqSub">点右边，看看这段休息值多少钱</div>
+          </div>
+          <button class="fq-btn" id="fqBtn" type="button">开始摸鱼</button>
+        </div>
+        <div class="fq-live hidden" id="fqLive">
+          <div class="fq-timer" id="fqTimer">00:00</div>
+          <div class="fq-cost">这段已计薪 <b id="fqCost">¥0.00</b></div>
+          <div class="break-note fq-note" id="fqNote"></div>
+        </div>
+      </div>
+
       <div class="card pet-dock" id="petDock" title="戳一下">
         <div class="pet-emoji" id="dockPet">🐱</div>
         <div class="bubble" id="dockBubble">…</div>
@@ -435,10 +470,25 @@
       <details class="sec">
         <summary>🧾 五险一金 · 个税<i class="sec-arrow">›</i></summary>
         <div class="sec-body">
+          <div class="field"><label>按税后计薪</label><span class="sw"><input type="checkbox" id="taxOn"><i></i></span></div>
+          <div class="field"><label>计税方式</label><select id="taxMode">
+            <option value="rate">按五险一金比例估算</option>
+            <option value="net">按实际到手金额（更简单）</option>
+          </select></div>
+          <div id="taxNetBlock" class="hidden">
+            <div class="field"><label>每月实际到手（元）</label><input type="number" id="taxNetSalary" min="0" step="100" placeholder="工资条上的数字"></div>
+            <div class="field"><label>医保每月缴纳总额（元）</label><input type="number" id="taxMedical" min="0" step="10" placeholder="个人 + 单位，看工资条"></div>
+            <div class="field"><label>社保个人比例 %</label><input type="number" id="taxNetSocial" min="0" max="30" step="0.1"></div>
+            <div class="field"><label>公司社保比例 %</label><input type="number" id="taxNetCoSocial" min="0" max="30" step="0.1"></div>
+            <div class="field"><label>缴纳基数（元/月）</label><input type="number" id="taxNetBase" min="0" step="100"></div>
+            <div class="caption" id="taxNetBreak"></div>
+            <div class="caption" id="taxNetNote"></div>
+          </div>
+          <div id="taxRateBlock">
           <div class="field"><label>省份（自动填参数）</label><select id="taxProv"></select></div>
           <div class="field"><label>城市</label><select id="taxCity"></select></div>
-          <div class="field"><label>按税后计薪</label><span class="sw"><input type="checkbox" id="taxOn"><i></i></span></div>
-          <div class="field"><label>公积金个人比例 %</label><input type="number" id="taxFund" min="0" max="12" step="0.5"></div>
+          <div class="field"><label>公司有交公积金</label><span class="sw"><input type="checkbox" id="taxHasFund" checked><i></i></span></div>
+          <div class="field hidden" id="taxFundField"><label>公积金个人比例 %</label><input type="number" id="taxFund" min="0" max="12" step="0.5"></div>
           <div class="field"><label>社保个人比例 %</label><input type="number" id="taxSocial" min="0" max="30" step="0.5"></div>
           <div class="field"><label>个税起征点（元/月）</label><input type="number" id="taxThreshold" min="0" step="100"></div>
           <div class="field"><label>缴费基数上限</label><input type="number" id="taxCap" min="0" step="100"></div>
@@ -451,9 +501,10 @@
           </select></div>
           <div class="field hidden" id="taxTierCustomField"><label>自定义缴费基数（元/月）</label><input type="number" id="taxTierCustom" min="0" step="100"></div>
           <div class="field"><label>公司社保比例 %</label><input type="number" id="taxCoSocial" min="0" max="30" step="0.5"></div>
-          <div class="field"><label>公司公积金比例 %</label><input type="number" id="taxCoFund" min="0" max="12" step="0.5"></div>
+          <div class="field hidden" id="taxCoFundField"><label>公司公积金比例 %</label><input type="number" id="taxCoFund" min="0" max="12" step="0.5"></div>
+          </div>
           <div class="caption" id="taxPreview"></div>
-          <div class="caption">地区选项为 2024–2025 年度常见参考值，各地每年 7 月前后调整，请以当地人社/公积金中心公布为准；选择后仍可逐项修改（一旦手改，地区自动变为“自定义”）。社保个人默认 10.5% = 养老 8% + 医疗 2% + 失业 0.5%；公司社保默认 26.5% ≈ 养老 16% + 医疗生育 ~9.5% + 失业/工伤 ~1%。缴费档位按工资比例近似折算基数（个人与公司同一基数，选“自定义基数”可精确填写，如按当地下限缴纳）；公司缴纳不扣个税、不影响到手，但公积金进账是你的隐藏收入。起征点可加上专项附加扣除（如房租房贷、子女教育）；基数上限/下限填 0 表示不限。个税按月度简化税率估算，不含年终奖。</div>
+          <div class="caption">地区选项已更新到 2025–2026 年度最新公布的缴费基数上下限（各省每年 7 月前后调整，可在「💾 数据与备份」里一键联网更新），请以当地人社 / 公积金中心公布为准；选择后仍可逐项修改（一旦手改，地区自动变为“自定义”）。社保个人默认按各险种相加（养老 8% + 医疗 2% + 失业 0.5% 等）；公司社保按养老 16% + 医疗 + 失业 + 工伤 + 生育合计。缴费档位按工资比例近似折算基数（个人与公司同一基数，选“自定义基数”可精确填写，如按当地下限缴纳）；公司缴纳不扣个税、不影响到手，但公积金进账是你的隐藏收入。起征点可加上专项附加扣除（如房租房贷、子女教育）；基数上限/下限填 0 表示不限。个税按月度简化税率估算，不含年终奖。</div>
         </div>
       </details>
       <details class="sec">
@@ -498,11 +549,21 @@
         <div class="sec-body">
           <div class="caption" id="calStatus" style="margin:12px 0 6px"></div>
           <button class="btn ghost" id="btnCal">更新节假日数据 🔄</button>
+          <div class="caption" id="regionStatus" style="margin:12px 0 6px"></div>
+          <button class="btn ghost" id="btnRegion">更新社保比例 / 基数 🧾</button>
           <div class="btn-row">
             <button class="btn ghost" id="btnExport">导出数据</button>
             <button class="btn ghost" id="btnImport">导入数据</button>
           </div>
           <input type="file" id="fileImport" accept=".json,application/json" class="hidden">
+        </div>
+      </details>
+      <details class="sec sec-desktop">
+        <summary>🪟 桌面浮窗<i class="sec-arrow">›</i></summary>
+        <div class="sec-body">
+          <div class="field"><label>显示浮窗</label><span class="sw"><input type="checkbox" id="miniOn"><i></i></span></div>
+          <div class="field"><label>浮窗不透明度 %</label><input type="number" id="miniAlpha" min="40" max="100" step="5"></div>
+          <div class="caption">浮窗是一个常驻置顶的小窗，只显示「今日已计薪」和「摸鱼已赚」，可拖到屏幕任意位置，双击回到主窗口，右键可调置顶与透明度。主窗口收进托盘后浮窗依然在。</div>
         </div>
       </details>
       <details class="sec sec-desktop">
@@ -558,7 +619,8 @@ const DEFAULTS = {
   settings: { salary: 12000, payday: 10, start: '09:00',
               lunch: true, lunchStart: '12:00', lunchEnd: '13:00', end: '18:00', overtime: false,
               daysOverride: null, daysMonthKey: '',
-              tax: { enabled: false, fundRate: 12, socialRate: 10.5, threshold: 5000, baseCap: 0,
+              tax: { enabled: false, hasFund: true, fundRate: 12, socialRate: 10.5, threshold: 5000, baseCap: 0,
+                     mode: 'rate', netSalary: 0, medicalIn: 0,          // mode: rate=按比例估算 | net=按实际到手
                      baseTier: 'full', customBase: 0, coSocialRate: 26.5, coFundRate: 12,
                      regionProv: 'custom', regionCity: 'custom', baseFloor: 0 } },
   pet: { id: 'xiaoxin', water: true, move: true, overtimeCare: true, reportMin: 15 },
@@ -709,25 +771,27 @@ function paidH() {
 }
 /* 五险一金 · 个税（月度简化模型，比例可在设置中调整） */
 const TIER_NAMES = { full: '工资全额', p80: '工资 80% 档', p60: '工资 60% 档', custom: '自定义基数' };
-/* 全国地区五险一金参考值（2024–2025 年度常见口径，各地每年 7 月前后调整，可手动覆盖）
-   省级: [基数下限, 基数上限, 个人社保%, 公司社保%, 个人公积金%, 公司公积金%] */
+/* 全国地区五险一金参考值（基数上下限为各省 2025 年度 / 2026 年度最新公布值，可手动覆盖）
+   省级: [基数下限, 基数上限, 个人社保%, 公司社保%, 个人公积金%, 公司公积金%]
+   注：这里用的是「养老/失业/工伤」口径的基数；医保基数在部分地区与之不同（河北、内蒙古、
+   福建等），实发金额模式的反推会自动取医保口径，参见过滤器 medicalBaseFrom()。 */
 const PROV = {
-  '北京': [7162, 35811, 10.5, 26.7, 12, 12], '天津': [5124, 25620, 10.5, 26.3, 12, 12],
-  '上海': [7460, 37302, 10.5, 27.0, 12, 12], '重庆': [4403, 22017, 10.5, 25.5, 12, 12],
-  '河北': [4007, 20034, 10.5, 25.0, 12, 12], '山西': [4198, 20991, 10.5, 25.0, 12, 12],
-  '内蒙古': [4907, 24537, 10.5, 24.5, 12, 12], '辽宁': [4358, 21792, 10.5, 25.0, 12, 12],
+  '北京': [7270, 36348, 10.5, 26.7, 12, 12], '天津': [5180, 25902, 10.5, 26.3, 12, 12],
+  '上海': [7546, 37731, 10.5, 27.0, 12, 12], '重庆': [4403, 22017, 10.5, 25.5, 12, 12],
+  '河北': [4076, 20382, 10.5, 25.0, 12, 12], '山西': [4244, 21219, 10.5, 25.0, 12, 12],
+  '内蒙古': [4907, 24537, 10.5, 24.5, 12, 12], '辽宁': [4533, 22665, 10.5, 25.0, 12, 12],
   '吉林': [4393, 21966, 10.5, 24.5, 12, 12], '黑龙江': [4542, 22710, 10.5, 24.5, 12, 12],
-  '江苏': [4952, 24762, 10.5, 25.5, 12, 12], '浙江': [5060, 25299, 10.5, 24.0, 12, 12],
-  '安徽': [4311, 21555, 10.5, 24.5, 12, 12], '福建': [4521, 22605, 10.5, 24.0, 12, 12],
-  '江西': [3915, 19575, 10.5, 24.0, 12, 12], '山东': [4504, 22518, 10.5, 25.0, 12, 12],
-  '河南': [3831, 19155, 10.5, 24.5, 12, 12], '湖北': [4869, 24356, 10.5, 25.0, 12, 12],
-  '湖南': [4072, 20361, 10.5, 24.5, 12, 12], '广东': [4580, 26421, 10.2, 22.5, 12, 12],
-  '广西': [4143, 20715, 10.5, 23.5, 12, 12], '海南': [4913, 24564, 10.5, 24.0, 12, 12],
-  '四川': [4588, 22938, 10.5, 23.5, 12, 12], '贵州': [4395, 21974, 10.5, 24.0, 12, 12],
-  '云南': [4358, 21789, 10.5, 24.5, 12, 12], '西藏': [7066, 35331, 10.5, 25.5, 12, 12],
-  '陕西': [4650, 23250, 10.5, 25.2, 12, 12], '甘肃': [4403, 22014, 10.5, 24.5, 12, 12],
-  '青海': [5290, 26448, 10.5, 24.5, 12, 12], '宁夏': [4955, 24774, 10.5, 25.0, 12, 12],
-  '新疆': [5069, 25344, 10.5, 24.5, 12, 12]
+  '江苏': [4952, 24762, 10.5, 25.5, 12, 12], '浙江': [4986, 25299, 10.5, 24.0, 12, 12],
+  '安徽': [4354, 21772, 10.5, 24.5, 12, 12], '福建': [4579, 22893, 10.5, 24.0, 12, 12],
+  '江西': [3915, 19575, 10.5, 24.0, 12, 12], '山东': [4573, 22863, 10.5, 25.0, 12, 12],
+  '河南': [3831, 19155, 10.5, 24.5, 12, 12], '湖北': [4498, 22488, 10.5, 25.0, 12, 12],
+  '湖南': [4106, 20529, 10.5, 24.5, 12, 12], '广东': [5510, 27549, 10.2, 22.5, 12, 12],
+  '广西': [4143, 20715, 10.5, 23.5, 12, 12], '海南': [4912.8, 24564, 10.5, 24.0, 12, 12],
+  '四川': [4699, 23493, 10.5, 23.5, 12, 12], '贵州': [4395, 21974, 10.5, 24.0, 12, 12],
+  '云南': [4357, 21789, 10.5, 24.5, 12, 12], '西藏': [7172.4, 35862, 10.5, 25.5, 12, 12],
+  '陕西': [4650, 23250, 10.5, 25.2, 12, 12], '甘肃': [4526, 22626, 10.5, 24.5, 12, 12],
+  '青海': [5333, 26448, 10.5, 24.5, 12, 12], '宁夏': [5023, 25113, 10.5, 25.0, 12, 12],
+  '新疆': [5246, 26231, 10.5, 24.5, 12, 12]
 };
 const PROV_CITIES = {
   '北京': ['北京'], '天津': ['天津'], '上海': ['上海'], '重庆': ['重庆'],
@@ -759,15 +823,54 @@ const PROV_CITIES = {
   '宁夏': ['银川', '石嘴山', '吴忠', '固原', '中卫'],
   '新疆': ['乌鲁木齐', '克拉玛依', '吐鲁番', '哈密', '昌吉', '博尔塔拉', '巴音郭楞', '阿克苏', '克孜勒苏', '喀什', '和田', '伊犁', '塔城', '阿勒泰']
 };
-/* 计划单列/口径特殊城市覆盖（格式同省级） */
+/* 计划单列/口径特殊城市覆盖（格式同省级）
+   深圳、东莞：广东养老保险二类地区，下限按 4775，全省上限 27549 */
 const CITY_FIX = {
-  '深圳': [2360, 27234, 10.5, 20.6, 12, 12],
-  '东莞': [4546, 26421, 10.2, 21.0, 12, 12]
+  '深圳': [4775, 27549, 10.2, 21.6, 12, 12],
+  '东莞': [4775, 27549, 10.2, 21.6, 12, 12]
 };
+/* 医保基数不等于养老基数的地区（基数上下限与养老口径不同，反推时必须用医保口径）
+   河北：省本级医保基数依据 6794，低于按 6794 缴
+   内蒙古：医保基数下限 6744 / 上限 25290（按社平 8430 的 80% 核定）
+   福建：医保基数 4579/22893，养老失业工伤仍为 4043/22607
+   浙江：杭州等地医保基数 4986、费率 9.5%（含生育）
+   深圳：医保基数单独一套 6727/33633
+   以下是内置兜底值，regions.json 的 medicalBase 段会覆盖它（改数据不用发版） */
+const MED_BASE = {
+  '河北': { floor: 6794, cap: 0 },
+  '内蒙古': { floor: 6744, cap: 25290 },
+  '福建': { floor: 4579, cap: 22893 },
+  '浙江': { floor: 4986, cap: 0 },
+  '深圳': { floor: 6727, cap: 33633 }
+};
+/** 把 regions.json 的 medicalBase 段并入 MED_BASE：支持 {floor,cap} 与 [floor,cap] 两种写法 */
+function applyMedicalBase(mb) {
+  if (!mb) return 0;
+  let hit = 0;
+  for (const k of Object.keys(mb)) {
+    const v = mb[k];
+    if (!v) continue;
+    const floor = Array.isArray(v) ? v[0] : v.floor;
+    const cap = Array.isArray(v) ? v[1] : v.cap;
+    if (floor === undefined && cap === undefined) continue;
+    MED_BASE[k] = { floor: +floor || 0, cap: +cap || 0 };
+    hit++;
+  }
+  return hit;
+}
 function regionValues(prov, city) {
   const p = PROV[prov]; if (!p) return null;
   const v = CITY_FIX[city] || p;
   return { floor: v[0], cap: v[1], social: v[2], coSocial: v[3], fund: v[4], coFund: v[5] };
+}
+/** 反推缴费基数时用的上下限：该地用医保基数就用医保的，否则沿用当地养老口径。
+    注意必须用 regionValues() 现算 —— 草稿里的 baseFloor/baseCap 可能是切换地区前的旧值，
+    也可能是用户手填「自定义」时留下的 0，直接拿来做夹取会得出离谱的基数。 */
+function medicalBaseFrom(t) {
+  const m = MED_BASE[t.regionCity] || MED_BASE[t.regionProv];
+  if (m) return { floor: m.floor, cap: m.cap };
+  const v = regionValues(t.regionProv, t.regionCity);
+  return v ? { floor: v.floor, cap: v.cap } : { floor: t.baseFloor, cap: t.baseCap };
 }
 function applyRegion(t) {
   const v = regionValues(t.regionProv, t.regionCity);
@@ -775,6 +878,56 @@ function applyRegion(t) {
   t.baseFloor = v.floor; t.baseCap = v.cap;
   t.socialRate = v.social; t.coSocialRate = v.coSocial;
   t.fundRate = v.fund; t.coFundRate = v.coFund;
+}
+/* 各险种比例 [个人%, 单位%]：养老 / 医疗 / 失业 / 工伤 / 生育
+   用途：实发金额模式下用「医保缴纳总额」÷（医疗个人 + 医疗单位 比例）反推缴费基数，
+   再用各险种比例算出每险种金额，各项相加即社保个人/公司总比例。
+   省级缺省值由 regions.json 的 breakdown 覆盖，查不到时用 DEFAULT_BREAKDOWN。 */
+const DEFAULT_BREAKDOWN = { pension: [8, 16], medical: [2, 8], unemploy: [0.5, 0.5], injury: [0, 0.4], maternity: [0, 0.8] };
+const BREAKDOWN = {};
+const BREAKDOWN_ITEMS = [['养老', 'pension'], ['医疗', 'medical'], ['失业', 'unemploy'], ['工伤', 'injury'], ['生育', 'maternity']];
+function regionBreakdown(prov, city) {
+  return BREAKDOWN[city] || BREAKDOWN[prov] || DEFAULT_BREAKDOWN;
+}
+function normalizeBreakdown(v) {                          // 兼容缺项：缺的险种按默认值补
+  const o = {};
+  for (const it of BREAKDOWN_ITEMS) {
+    const r = v && v[it[1]];
+    o[it[1]] = (Array.isArray(r) && r.length === 2) ? [+r[0] || 0, +r[1] || 0] : DEFAULT_BREAKDOWN[it[1]];
+  }
+  return o;
+}
+/** 由医保缴纳总额反推：缴费基数 + 各险种金额 + 社保个人/公司总比例
+    tArg 省略时用 state.settings.tax（渲染时走 withDraft，拿到的就是草稿） */
+function reverseFromMedical(tArg) {
+  const t = tArg || state.settings.tax, total = t.medicalIn;
+  const b = regionBreakdown(t.regionProv, t.regionCity);
+  const medRate = b.medical[0] + b.medical[1];
+  if (!(total > 0) || !(medRate > 0)) return null;
+  const raw = total / (medRate / 100);
+  const lim = medicalBaseFrom(t);                         // 河北/内蒙古/福建等医保基数与养老基数不同
+  let base = raw, clamped = false;
+  if (lim.floor > 0 && base < lim.floor) { base = lim.floor; clamped = true; }
+  if (lim.cap > 0 && base > lim.cap) { base = lim.cap; clamped = true; }
+  let sp = 0, sc = 0;
+  const rows = BREAKDOWN_ITEMS.map(([name, key]) => {
+    const r = b[key]; sp += r[0]; sc += r[1];
+    return { name, rp: r[0], rc: r[1], p: base * r[0] / 100, c: base * r[1] / 100 };
+  });
+  return { base, raw, clamped, socialP: sp, socialC: sc, rows, medicalAccount: base * b.medical[0] / 100, medRate,
+           medFloor: lim.floor, medCap: lim.cap };
+}
+function netBreakHTML(rev) {
+  if (!rev) return '';
+  const sumP = rev.rows.reduce((a, r) => a + r.p, 0), sumC = rev.rows.reduce((a, r) => a + r.c, 0);
+  const rows = rev.rows.filter(r => r.rp > 0 || r.rc > 0)
+    .map(r => `${r.name} ${r.rp}%${r.rc > 0 ? '+' + r.rc + '%' : ''} ¥${fmt2(r.p + r.c)}`).join(' · ');
+  const limNote = (rev.medCap > 0 && rev.medCap !== rev.base)
+    ? `（按当地医保基数上下限 ${rev.medFloor > 0 ? fmt2(rev.medFloor) + ' ~ ' : ''}${fmt2(rev.medCap)} 核对）` : '';
+  return `反推缴费基数 ¥${fmt2(rev.base)}${limNote}（医保 ${rev.medRate}% → 总额 ÷ ${rev.medRate}%）<br>` +
+    `${rows}<br>` +
+    `个人合计 ¥${fmt2(sumP)}（${rev.socialP.toFixed(1)}%）· 公司合计 ¥${fmt2(sumC)}（${rev.socialC.toFixed(1)}%）· 医保账户月到账 ¥${fmt2(rev.medicalAccount)}` +
+    (rev.clamped ? `<br>⚠️ 反推出的基数 ¥${fmt2(rev.raw)} 超出当地医保基数上下限，已按 ¥${fmt2(rev.base)} 取值，请核对医保缴纳总额与所选地区。` : '');
 }
 /* 地区参数：内置兜底 + 在线 regions.json 覆盖（同 holiday-cn 模式，改数据不用发版） */
 const REGIONS_CACHE_KEY = 'salarydance.regions';
@@ -785,15 +938,37 @@ function applyRegionsData(data) {
     const v = data.provinces[k];
     if (PROV[k] && Array.isArray(v) && v.length === 6) { PROV[k] = v.slice(); hit++; }
   }
+  // 各险种比例（v3 起）：用于实发金额模式的反推，缺失时回落到 DEFAULT_BREAKDOWN
+  const bd = data.breakdown || data.insurance;
+  if (bd) for (const k of Object.keys(bd)) BREAKDOWN[k] = normalizeBreakdown(bd[k]);
+  if (data.cities) for (const k of Object.keys(data.cities)) {
+    const v = data.cities[k];
+    if (CITY_FIX[k] && Array.isArray(v) && v.length === 6) CITY_FIX[k] = v.slice();
+  }
+  // 医保基数单独一套的地区（v4 起）：只影响实发金额模式的反推，不影响养老口径的 insBaseMonthly
+  applyMedicalBase(data.medicalBase);
   return hit > 0;
 }
+/** 拉取最新 regions.json（社保基数上下限 + 五险比例 + 各行数据），成功返回 true */
 function refreshRegions(silent) {
-  fetch('regions.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
-    if (!applyRegionsData(j)) return;
-    try { localStorage.setItem(REGIONS_CACHE_KEY, JSON.stringify(j)); } catch (e) {}
+  return fetch('regions.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
+    if (!applyRegionsData(j)) {
+      if (!silent) say('社保数据格式不对，已保留当前数据 📴');
+      return false;
+    }
+    regionMeta = { version: j.version || 0, updatedAt: j.updatedAt || '', source: j.source || '' };
+    try {
+      localStorage.setItem(REGIONS_CACHE_KEY, JSON.stringify({ data: j, meta: regionMeta, fetchedAt: Date.now() }));
+    } catch (e) {}
     renderSettings();
-  }).catch(() => {});
+    if (!silent) say(`社保比例与基数已更新到最新（数据日期 ${j.updatedAt || '未知'}）✅`);
+    return true;
+  }).catch(() => {
+    if (!silent) say('暂时连不上社保数据源，先用内置 / 缓存数据 📴');
+    return false;
+  });
 }
+let regionMeta = null;
 const TAX_BRACKETS = [                                 // 月度换算税率表 [上限, 税率, 速算扣除数]
   [3000, .03, 0], [12000, .10, 210], [25000, .20, 1410], [35000, .25, 2660],
   [55000, .30, 4410], [80000, .35, 7160], [Infinity, .45, 15160]
@@ -808,15 +983,18 @@ function insBaseMonthly(salary) {                      // 缴费基数：档位�
   if (t.baseCap > 0) base = Math.min(base, t.baseCap);
   return Math.max(0, base);
 }
+/* 公积金开关：关闭后个人/公司公积金比例一律按 0 参与计算（原值保留，重新打开即恢复） */
+const effFundRate = () => state.settings.tax.hasFund ? state.settings.tax.fundRate : 0;
+const effCoFundRate = () => state.settings.tax.hasFund ? state.settings.tax.coFundRate : 0;
 function insuranceMonthly(salary) {                    // 五险一金个人部分
   const t = state.settings.tax;
-  return insBaseMonthly(salary) * (t.socialRate + t.fundRate) / 100;
+  return insBaseMonthly(salary) * (t.socialRate + effFundRate()) / 100;
 }
 function companyMonthly(salary) {                      // 公司缴纳部分（不进入个税，属隐藏福利）
   const t = state.settings.tax;
-  return insBaseMonthly(salary) * (t.coSocialRate + t.coFundRate) / 100;
+  return insBaseMonthly(salary) * (t.coSocialRate + effCoFundRate()) / 100;
 }
-const fundMonthlyIn = salary => insBaseMonthly(salary) * (state.settings.tax.fundRate + state.settings.tax.coFundRate) / 100;  // 公积金账户月进账（个人+公司）
+const fundMonthlyIn = salary => insBaseMonthly(salary) * (effFundRate() + effCoFundRate()) / 100;  // 公积金账户月进账（个人+公司）
 function taxMonthly(salary) {                          // 月度个税（估算）
   const t = state.settings.tax;
   const taxable = salary - insuranceMonthly(salary) - t.threshold;
@@ -825,9 +1003,17 @@ function taxMonthly(salary) {                          // 月度个税（估算�
     if (taxable <= limit) return Math.max(0, taxable * rate - quick);
 }
 const netSalaryMonthly = salary => salary - insuranceMonthly(salary) - taxMonthly(salary);
+/* 净额系数：税后计薪用它把税前金额折算成到手金额。
+   mode='net'（按实际到手）直接用 到手/税前，绕开比例与税率估算；否则走五险一金+个税估算。 */
+function netRatio() {
+  const s = state.settings;
+  if (s.salary <= 0) return 1;
+  if (s.tax.mode === 'net' && s.tax.netSalary > 0) return clamp(s.tax.netSalary / s.salary, 0, 1);
+  return Math.max(0, netSalaryMonthly(s.salary) / s.salary);
+}
 const taxFactor = () => {
   const s = state.settings;
-  return (s.tax.enabled && s.salary > 0) ? netSalaryMonthly(s.salary) / s.salary : 1;
+  return s.tax.enabled ? netRatio() : 1;
 };
 const perSec = () => { const h = paidH() || 8; return Math.max(0, state.settings.salary || 0) / (monthWorkdays() * h * 3600) * taxFactor(); };
 const perMinRate = () => perSec() * 60;
@@ -1041,8 +1227,13 @@ function say(text) {
   }
 }
 const petLine = (kind, extra) => {
-  const lines = curPet().lines[kind];
-  return lines ? fill(pick(lines), extra) : null;
+  let lines = curPet().lines[kind];
+  if (!lines) return null;
+  if (fundMonthlyIn(state.settings.salary) <= 0) {    // 没交公积金时别念「公积金月进 ¥0.00」
+    const noFund = lines.filter(l => !l.includes('{fund}'));
+    if (noFund.length) lines = noFund;
+  }
+  return fill(pick(lines), extra);
 };
 
 /* ================= 数字滚动渲染 ================= */
@@ -1091,12 +1282,26 @@ function renderToday(cents, now, st) {
 
   $$('#modeSwitch button').forEach(b => b.classList.toggle('on', (b.dataset.mode === 'net') === curTaxEnabled()));
   const tn = $('#taxNote'), tSal = state.settings.salary, tCfg = state.settings.tax;
-  if (tSal > 0 && (tCfg.enabled || tCfg.coSocialRate > 0 || tCfg.coFundRate > 0)) {
+  if (tSal > 0 && (tCfg.enabled || (tCfg.mode !== 'net' && (tCfg.coSocialRate > 0 || effCoFundRate() > 0)))) {
     tn.style.display = 'block';
     const lines = [];
     if (tCfg.enabled)
-      lines.push(`税后计薪中：五险一金 −¥${fmt2(insuranceMonthly(tSal))}/月 · 个税 −¥${fmt2(taxMonthly(tSal))}/月 · 月到手 ¥${fmt2(netSalaryMonthly(tSal))}`);
-    lines.push(`公司为你缴 ¥${fmt2(companyMonthly(tSal))}/月 · 公积金账户每月进账 ¥${fmt2(fundMonthlyIn(tSal))}`);
+      lines.push((tCfg.mode === 'net' && tCfg.netSalary > 0)
+        ? `按实际到手计薪：月到手 ¥${fmt2(tCfg.netSalary)}（税前的 ${(clamp(tCfg.netSalary / tSal, 0, 1) * 100).toFixed(1)}%）`
+        : `税后计薪中：五险一金 −¥${fmt2(insuranceMonthly(tSal))}/月 · 个税 −¥${fmt2(taxMonthly(tSal))}/月 · 月到手 ¥${fmt2(netSalaryMonthly(tSal))}`);
+    if (tCfg.mode === 'net') {
+      const base = insBaseMonthly(tSal), tp = tCfg.socialRate, tc = tCfg.coSocialRate;
+      if (base > 0 && (tp > 0 || tc > 0))
+        lines.push(`社保个人 ${tp.toFixed(1)}% ≈ ¥${fmt2(base * tp / 100)}/月 · 公司 ${tc.toFixed(1)}% ≈ ¥${fmt2(base * tc / 100)}/月（基数 ¥${fmt2(base)}）`);
+      else
+        lines.push('填「医保每月缴纳总额」可自动反推社保比例与缴费基数');
+      const medR = regionBreakdown(tCfg.regionProv, tCfg.regionCity).medical[0];
+      if (base > 0 && medR > 0) lines.push(`医保个人账户每月到账 ≈ ¥${fmt2(base * medR / 100)}（仅展示）`);
+    } else {
+      lines.push(fundMonthlyIn(tSal) > 0
+        ? `公司为你缴 ¥${fmt2(companyMonthly(tSal))}/月 · 公积金账户每月进账 ¥${fmt2(fundMonthlyIn(tSal))}`
+        : `公司为你缴 ¥${fmt2(companyMonthly(tSal))}/月（未缴纳公积金）`);
+    }
     tn.innerHTML = lines.join('<br>');
   } else tn.style.display = 'none';
 
@@ -1319,42 +1524,79 @@ function renderBreaks() {
     list.appendChild(div);
   }
 }
+function breakTotals(now) {                            // 今日摸鱼合计（进行中的一段也算进去）
+  let paid = 0, sec = 0, n = state.breaks.length;
+  for (const b of state.breaks) { paid += paidBreakSec(b.s, b.e); sec += (b.e - b.s) / 1000; }
+  if (state.activeBreak) {
+    paid += paidBreakSec(state.activeBreak, now);
+    sec += (now - state.activeBreak) / 1000;
+    n += 1;
+  }
+  return { paid, sec, n, cost: paid * perSec() };
+}
+function renderBreakControls(now) {                    // 首页快捷块 + 摸鱼页大按钮 + 底栏圆钮，统一刷新避免两处状态不一致
+  const on = !!state.activeBreak, tb = breakTotals(now || Date.now());
+  const bb = $('#breakBtn');
+  bb.classList.toggle('on', on);
+  bb.innerHTML = on ? '结束<br>摸鱼' : '开始<br>摸鱼';
+  const fb = $('#fqBtn');
+  fb.classList.toggle('on', on);
+  fb.textContent = on ? '结束' : '开始摸鱼';
+  $('#fqLive').classList.toggle('hidden', !on);
+  if (!on) {
+    $('#fqTitle').textContent = tb.n
+      ? (tb.cost > 0.005 ? `今日已摸 ${tb.n} 次 · 赚了 ¥${tb.cost.toFixed(2)}` : `今日已摸 ${tb.n} 次 · 都是用爱摸的`)
+      : '今天还没摸鱼';
+    $('#fqSub').textContent = tb.n
+      ? `累计 ${fmtDur(tb.sec)} · 其中计薪 ${fmtDur(tb.paid)}`
+      : '点右边，看看这段休息值多少钱';
+    $('#breakTimer').textContent = '00:00';
+    $('#breakCost').textContent = '¥0.00';
+    $('#breakNote').classList.remove('show');
+    $('#fqNote').classList.remove('show');
+  } else {
+    $('#fqTitle').textContent = '摸鱼中…';
+    $('#fqSub').textContent = `今天是第 ${tb.n} 段 · 工资照常在涨 😌`;
+    renderBreakLive(now || Date.now());
+  }
+  document.querySelector('.tab[data-page="rest"]').classList.toggle('live', on);
+}
 function renderBreakLive(now) {
   const el = (now - state.activeBreak) / 1000;
   const paid = paidBreakSec(state.activeBreak, now);
-  $('#breakTimer').textContent = pad(Math.floor(el / 60)) + ':' + pad(Math.floor(el % 60));
-  $('#breakCost').textContent = '¥' + (paid * perSec()).toFixed(2);
-  const note = $('#breakNote');
-  if (paid <= 0) {
-    note.textContent = '⏰ 现在不在计薪时段：只帮你计时，不算钱～';
-    note.classList.add('show');
-  } else if (paid < el - 1) {
-    note.textContent = '⏰ 摸出计时时段啦，只有落在工作时间里的部分才计薪';
-    note.classList.add('show');
-  } else note.classList.remove('show');
+  const cost = paid * perSec();
+  const hms = pad(Math.floor(el / 60)) + ':' + pad(Math.floor(el % 60));
+  $('#breakTimer').textContent = hms;
+  $('#breakCost').textContent = '¥' + cost.toFixed(2);
+  $('#fqTimer').textContent = hms;
+  $('#fqCost').textContent = '¥' + cost.toFixed(2);
+  let txt = '';
+  if (paid <= 0) txt = '⏰ 现在不在计薪时段：只帮你计时，不算钱～';
+  else if (paid < el - 1) txt = '⏰ 摸出计时时段啦，只有落在工作时间里的部分才计薪';
+  for (const [nid, cls] of [['breakNote', ''], ['fqNote', '']]) {
+    const note = $('#' + nid);
+    if (txt) { note.textContent = txt; note.classList.add('show'); }
+    else note.classList.remove('show');
+  }
 }
-$('#breakBtn').addEventListener('click', () => {
+function toggleBreak() {                               // 首页按钮与摸鱼页大按钮共用
   if (!state.activeBreak) {
     const st = statusOf(new Date());
     if (st !== 'working' && st !== 'overtime') toast(BREAK_HINT[st] || '现在摸鱼不带薪哦，纯纯免费快乐 🎣');
     state.activeBreak = Date.now();
-    $('#breakBtn').classList.add('on');
-    $('#breakBtn').innerHTML = '结束<br>摸鱼';
     say(petLine('breakStart'));
   } else {
     const cost = paidBreakSec(state.activeBreak, Date.now()) * perSec();
     state.breaks.push({ s: state.activeBreak, e: Date.now() });
     state.activeBreak = null;
-    $('#breakBtn').classList.remove('on');
-    $('#breakBtn').innerHTML = '开始<br>摸鱼';
-    $('#breakTimer').textContent = '00:00';
-    $('#breakCost').textContent = '¥0.00';
-    $('#breakNote').classList.remove('show');
     say(petLine('breakEnd', '¥' + cost.toFixed(2)));
     renderBreaks();
   }
   markDirty(); save();
-});
+  renderBreakControls();
+}
+$('#breakBtn').addEventListener('click', toggleBreak);
+$('#fqBtn').addEventListener('click', toggleBreak);
 
 /* ================= 年假页 ================= */
 function renderLeave(now) {
@@ -1539,7 +1781,24 @@ function renderSettingsRaw() {
   $('#setLunch').checked = s.lunch; $('#setLunchStart').value = s.lunchStart; $('#setLunchEnd').value = s.lunchEnd;
   $('#setOvertime').checked = s.overtime;
   const t = s.tax;
+  const isNet = t.mode === 'net';
   $('#taxOn').checked = t.enabled;
+  $('#taxMode').value = isNet ? 'net' : 'rate';
+  $('#taxRateBlock').classList.toggle('hidden', isNet);
+  $('#taxNetBlock').classList.toggle('hidden', !isNet);
+  $('#taxNetSalary').value = t.netSalary || '';
+  $('#taxMedical').value = t.medicalIn || '';
+  $('#taxNetSocial').value = t.socialRate;
+  $('#taxNetCoSocial').value = t.coSocialRate;
+  $('#taxNetBase').value = t.customBase || '';
+  const rev = isNet ? reverseFromMedical(t) : null;
+  $('#taxNetBreak').innerHTML = rev ? netBreakHTML(rev) : '';
+  $('#taxNetNote').textContent = (isNet && s.salary > 0 && t.netSalary > 0)
+    ? `税前月薪 ¥${fmt2(s.salary)}（就用上面「收入与作息」里的月薪，不用重复填）· 每月扣 ¥${fmt2(Math.max(0, s.salary - t.netSalary))}，到手是税前的 ${(netRatio() * 100).toFixed(1)}%。${t.medicalIn > 0 ? '已按医保缴纳总额自动反推下面的社保比例与缴纳基数，可手动微调。' : '填入「医保每月缴纳总额」后会自动反推社保比例与缴纳基数。'}`
+    : '税前月薪就用上面「收入与作息」里的月薪（未扣五险一金），不用重复填。到手金额填工资条 / 银行卡实际到账的数；医保缴纳总额 = 工资条上医保个人扣款 + 单位缴纳部分，填了就能反推出缴费基数和社保比例。';
+  $('#taxHasFund').checked = t.hasFund;
+  $('#taxFundField').classList.toggle('hidden', !t.hasFund);
+  $('#taxCoFundField').classList.toggle('hidden', !t.hasFund);
   $('#taxFund').value = t.fundRate;
   $('#taxSocial').value = t.socialRate;
   $('#taxThreshold').value = t.threshold;
@@ -1561,11 +1820,16 @@ function renderSettingsRaw() {
   $('#taxTierCustomField').classList.toggle('hidden', $('#taxTier').value !== 'custom');
   $('#taxCoSocial').value = t.coSocialRate;
   $('#taxCoFund').value = t.coFundRate;
-  $('#taxPreview').innerHTML = s.salary > 0
-    ? `按月薪 ¥${fmt2(s.salary)} 估算：缴费基数 ¥${fmt2(insBaseMonthly(s.salary))}（${TIER_NAMES[$('#taxTier').value]}${t.regionCity !== 'custom' ? ' · ' + t.regionCity + '参考' : (t.regionProv !== 'custom' ? ' · ' + t.regionProv + '参考' : '')}）<br>` +
-      `五险一金 −¥${fmt2(insuranceMonthly(s.salary))} · 个税 −¥${fmt2(taxMonthly(s.salary))} · 月到手 ¥${fmt2(netSalaryMonthly(s.salary))}（约为税前的 ${(netSalaryMonthly(s.salary) / s.salary * 100).toFixed(1)}%）<br>` +
-      `公司为你缴 ¥${fmt2(companyMonthly(s.salary))}/月 = 社保 ¥${fmt2(insBaseMonthly(s.salary) * t.coSocialRate / 100)} + 公积金 ¥${fmt2(insBaseMonthly(s.salary) * t.coFundRate / 100)} · 公积金账户月进账 ¥${fmt2(fundMonthlyIn(s.salary))}`
-    : '填写月薪后，这里显示到手与公司缴纳估算。';
+  $('#taxPreview').innerHTML = (isNet && s.salary > 0 && t.netSalary > 0)
+    ? `按实际到手计薪：税前 ¥${fmt2(s.salary)} → 到手 ¥${fmt2(t.netSalary)}，每月扣 ¥${fmt2(Math.max(0, s.salary - t.netSalary))}（${(100 - netRatio() * 100).toFixed(1)}%）· 计薪按 ${(netRatio() * 100).toFixed(1)}% 折算` +
+      (t.medicalIn > 0 ? `<br>医保账户每月到账 ¥${fmt2(t.medicalIn)}（仅展示，不参与计算）` : '')
+    : (s.salary > 0
+      ? `按月薪 ¥${fmt2(s.salary)} 估算：缴费基数 ¥${fmt2(insBaseMonthly(s.salary))}（${TIER_NAMES[$('#taxTier').value]}${t.regionCity !== 'custom' ? ' · ' + t.regionCity + '参考' : (t.regionProv !== 'custom' ? ' · ' + t.regionProv + '参考' : '')}）<br>` +
+        `五险一金 −¥${fmt2(insuranceMonthly(s.salary))} · 个税 −¥${fmt2(taxMonthly(s.salary))} · 月到手 ¥${fmt2(netSalaryMonthly(s.salary))}（约为税前的 ${(netSalaryMonthly(s.salary) / s.salary * 100).toFixed(1)}%）<br>` +
+        (t.hasFund
+          ? `公司为你缴 ¥${fmt2(companyMonthly(s.salary))}/月 = 社保 ¥${fmt2(insBaseMonthly(s.salary) * t.coSocialRate / 100)} + 公积金 ¥${fmt2(insBaseMonthly(s.salary) * t.coFundRate / 100)} · 公积金账户月进账 ¥${fmt2(fundMonthlyIn(s.salary))}`
+          : `公司为你缴 ¥${fmt2(companyMonthly(s.salary))}/月（仅社保，未缴纳公积金）`)
+      : '填写月薪后，这里显示到手与公司缴纳估算。');
   const now = new Date();
   const bd = monthBreakdown(now);
   $('#daysAuto').textContent = bd.hasData
@@ -1575,6 +1839,10 @@ function renderSettingsRaw() {
   $('#calStatus').textContent = cr && cr.fetchedAt
     ? `节假日数据：已在线更新（holiday-cn · ${new Date(cr.fetchedAt).toLocaleDateString('zh-CN')}），与内置数据自动合并`
     : '节假日数据：内置 2026 离线可用，联网时自动更新';
+  const rm = regionMeta || (state.regionsMeta || null);
+  $('#regionStatus').textContent = rm && rm.updatedAt
+    ? `社保比例 / 基数：已在线更新（数据日期 ${rm.updatedAt}${rm.version ? ' · v' + rm.version : ''}），与内置数据自动合并`
+    : '社保比例 / 基数：内置数据离线可用（各地每年 7 月前后调整），联网时自动更新';
 }
 function bindSetting(id, fn) {
   $(id).addEventListener('change', e => { fn(e.target); draftChanged(); });
@@ -1594,6 +1862,33 @@ bindSetting('#setLunchEnd', el => D().settings.lunchEnd = el.value || '13:00');
 bindSetting('#setOvertime', el => D().settings.overtime = el.checked);
 const bindTax = (id, fn) => $(id).addEventListener('change', e => { fn(e.target); draftChanged(); });
 bindTax('#taxOn', el => D().settings.tax.enabled = el.checked);
+bindTax('#taxHasFund', el => D().settings.tax.hasFund = el.checked);
+bindTax('#taxMode', el => D().settings.tax.mode = el.value === 'net' ? 'net' : 'rate');
+bindTax('#taxNetSalary', el => D().settings.tax.netSalary = clamp(parseFloat(el.value) || 0, 0, 100000000));
+bindTax('#taxMedical', el => {
+  const t = D().settings.tax;
+  t.medicalIn = clamp(parseFloat(el.value) || 0, 0, 10000000);
+  el.value = t.medicalIn || '';
+  autoFillFromMedical();        // 填了医保缴纳总额就自动反推社保比例与缴纳基数
+});
+bindTax('#taxNetSocial', el => { const t = D().settings.tax; t.socialRate = clamp(parseFloat(el.value) || 0, 0, 30); el.value = t.socialRate; });
+bindTax('#taxNetCoSocial', el => { const t = D().settings.tax; t.coSocialRate = clamp(parseFloat(el.value) || 0, 0, 30); el.value = t.coSocialRate; });
+bindTax('#taxNetBase', el => {
+  const t = D().settings.tax;
+  const v = clamp(parseFloat(el.value) || 0, 0, 10000000);
+  t.customBase = v; t.baseTier = v > 0 ? 'custom' : 'full';
+  el.value = v || '';
+});
+/** 医保缴纳总额 → 反推社保比例与缴纳基数，回填到实发模式的三个输入框 */
+function autoFillFromMedical() {
+  const t = D().settings.tax;
+  const rev = reverseFromMedical(D().settings.tax);
+  if (!rev) return;
+  t.socialRate = rev.socialP;
+  t.coSocialRate = rev.socialC;
+  t.customBase = Math.round(rev.base * 100) / 100;
+  t.baseTier = 'custom';
+}
 bindTax('#taxFund', el => { const t = D().settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.fundRate = clamp(parseFloat(el.value) || 0, 0, 12); el.value = t.fundRate; });
 bindTax('#taxSocial', el => { const t = D().settings.tax; t.regionProv = 'custom'; t.regionCity = 'custom'; t.socialRate = clamp(parseFloat(el.value) || 0, 0, 30); el.value = t.socialRate; });
 bindTax('#taxThreshold', el => { D().settings.tax.threshold = clamp(parseFloat(el.value) || 0, 0, 1000000); el.value = D().settings.tax.threshold; });
@@ -1642,6 +1937,11 @@ $('#btnRevert').addEventListener('click', () => {
 });
 
 $('#btnCal').addEventListener('click', () => refreshCal(false));
+$('#btnRegion').addEventListener('click', () => {
+  const b = $('#btnRegion');
+  b.disabled = true;
+  refreshRegions(false).then(() => { b.disabled = false; renderSettings(); });
+});
 $('#btnExport').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -1679,6 +1979,25 @@ function switchTab(name) {
 $$('.tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.page)));
 $('#gearBtn').addEventListener('click', () => switchTab('set'));
 
+/* ================= 桌面浮窗（仅 Windows 桌面壳内生效） =================
+   注意：这段必须在下面的 `if (window.chrome && chrome.webview)` 初始化块之前声明，
+   const/let 存在暂时性死区（TDZ），放在后面会在初始化时抛 ReferenceError。 */
+const MINI_KEY = 'mocent_mini';
+let miniOn = false, miniAlpha = 92, lastMiniPush = 0;
+function shellPost(msg) {
+  try { if (window.chrome && chrome.webview) chrome.webview.postMessage(msg); } catch (e) {}
+}
+function pushMini(force) {                              // 把今日已计薪 / 摸鱼已赚推给原生小窗
+  if (!miniOn) return;
+  const now = Date.now();
+  if (!force && now - lastMiniPush < 500) return;        // 500ms 节流
+  lastMiniPush = now;
+  const tb = breakTotals(now);
+  const d = new Date();
+  // 格式：tick:今日已计薪|摸鱼已赚|状态（金额带 ¥，与小窗拼好的文案对齐）
+  shellPost('tick:¥' + fmtC(todayEarnedCents(d)) + '|¥' + tb.cost.toFixed(2) + '|' + statusOf(d));
+}
+
 /* 桌面壳（WebView2）：窗口按钮在窗口最顶端独立标题条上 → 原生最小化/关闭；条上不放应用名 */
 if (window.chrome && chrome.webview) {
   document.documentElement.classList.add('app-shell');
@@ -1708,6 +2027,32 @@ if (window.chrome && chrome.webview) {
       chrome.webview.postMessage('ca:' + cur);
     });
   }
+
+  /* 桌面浮窗开关与不透明度（存本机，下次启动自动恢复） */
+  const miniSw = document.getElementById('miniOn');
+  const miniAl = document.getElementById('miniAlpha');
+  if (miniSw) {
+    try {
+      const raw = JSON.parse(localStorage.getItem(MINI_KEY) || 'null');
+      if (raw) { miniOn = !!raw.on; miniAlpha = clamp(parseInt(raw.alpha, 10) || 92, 40, 100); }
+    } catch (e4) {}
+    miniSw.checked = miniOn;
+    miniAl.value = miniAlpha;
+    if (miniOn) { shellPost('mini:on'); shellPost('alpha:' + miniAlpha); pushMini(true); }
+    miniSw.addEventListener('change', () => {
+      miniOn = miniSw.checked;
+      try { localStorage.setItem(MINI_KEY, JSON.stringify({ on: miniOn, alpha: miniAlpha })); } catch (e5) {}
+      shellPost(miniOn ? 'mini:on' : 'mini:off');
+      if (miniOn) pushMini(true);
+      toast(miniOn ? '浮窗已打开，可以拖到顺手的位置 😺' : '浮窗已关闭');
+    });
+    miniAl.addEventListener('change', () => {
+      miniAlpha = clamp(parseInt(miniAl.value, 10) || 92, 40, 100);
+      miniAl.value = miniAlpha;
+      try { localStorage.setItem(MINI_KEY, JSON.stringify({ on: miniOn, alpha: miniAlpha })); } catch (e6) {}
+      shellPost('alpha:' + miniAlpha);
+    });
+  }
 }
 
 /* ================= 主循环 ================= */
@@ -1715,8 +2060,8 @@ function rollDates(now) {
   const dk = dayKey(now), mk = monthKey(now);
   if (state.todayKey !== dk) {
     state.todayKey = dk; state.breaks = []; state.activeBreak = null; state.savedTodayEarned = 0;
-    $('#breakBtn').classList.remove('on'); $('#breakBtn').innerHTML = '开始<br>摸鱼';
     renderBreaks();
+    renderBreakControls(now);
   }
   if (state.monthKey !== mk) {
     state.monthKey = mk; state.monthEarned = 0;
@@ -1752,6 +2097,7 @@ function uiTick() {
   }
   renderToday(cents, now, st);
   renderLeave(now);
+  pushMini(false);                                      // 桌面浮窗数据（内部 500ms 节流）
   document.querySelector('.tab[data-page="rest"]').classList.toggle('live', !!state.activeBreak);  // 摸鱼计时中 → 图标坐圆盘浮起
   if (state.activeBreak) renderBreakLive(now);
 }
@@ -1765,7 +2111,11 @@ window.addEventListener('beforeunload', save);
   const now = new Date();
   try {
     const cached = JSON.parse(localStorage.getItem(REGIONS_CACHE_KEY) || 'null');
-    if (cached) applyRegionsData(cached);
+    if (cached) {
+      // 兼容两种缓存格式：{data,meta} 新格式 / 直接是数据的老格式
+      applyRegionsData(cached.data || cached);
+      if (cached.meta) regionMeta = cached.meta;
+    }
   } catch (e) {}
   const oldDay = state.todayKey, oldSaved = state.savedTodayEarned;
   rollDates(now);
@@ -1784,7 +2134,7 @@ window.addEventListener('beforeunload', save);
   renderLeaveLog();
   renderLeaveSettings();
   renderLeave(now);
-  if (state.activeBreak) { $('#breakBtn').classList.add('on'); $('#breakBtn').innerHTML = '结束<br>摸鱼'; }
+  renderBreakControls(now);                           // 恢复未结束的摸鱼计时（首页 + 摸鱼页）
 
   lastStatus = statusOf(now);
   const st = lastStatus;
@@ -1795,7 +2145,7 @@ window.addEventListener('beforeunload', save);
   }
   uiTick();
   refreshCal(true);                                   // 启动静默更新节假日数据
-  refreshRegions(true);                               // 启动静默更新地区参数
+  refreshRegions(true);                               // 启动静默更新社保比例 / 基数
 })();
 
 /* 供调试/自动化验收使用的只读钩子 */

@@ -73,7 +73,21 @@ class SettingsPage(private val act: MainActivity) {
     private lateinit var setOvertime: Switch
 
     private lateinit var taxOn: Switch
+    private lateinit var taxMode: Spinner
+    private lateinit var taxBlocks: LinearLayout
+    private lateinit var taxNetBlock: LinearLayout
+    private lateinit var taxRateBlock: LinearLayout
+    private lateinit var taxNetSalary: EditText
+    private lateinit var taxMedical: EditText
+    private lateinit var taxNetSocial: EditText
+    private lateinit var taxNetCoSocial: EditText
+    private lateinit var taxNetBase: EditText
+    private lateinit var taxNetBreak: TextView
+    private lateinit var taxNetNote: TextView
+    private lateinit var taxHasFund: Switch
     private lateinit var taxFund: EditText
+    private lateinit var taxFundRow: LinearLayout
+    private lateinit var taxCoFundRow: LinearLayout
     private lateinit var taxSocial: EditText
     private lateinit var taxThreshold: EditText
     private lateinit var taxCap: EditText
@@ -97,6 +111,7 @@ class SettingsPage(private val act: MainActivity) {
     private lateinit var leaveBaseNote: TextView
 
     private lateinit var calStatus: TextView
+    private lateinit var regionStatus: TextView
 
     private lateinit var remindOn: Switch
     private lateinit var remindSpin: Spinner
@@ -180,7 +195,6 @@ class SettingsPage(private val act: MainActivity) {
                 override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
             }
         }
-        card2.addView(Ui.field(c, "省份（自动填参数）", provSpin))
         citySpin = Spinner(c).apply {
             adapter = android.widget.ArrayAdapter(c, android.R.layout.simple_spinner_dropdown_item, listOf("自定义"))
             onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
@@ -198,14 +212,61 @@ class SettingsPage(private val act: MainActivity) {
                 override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
             }
         }
-        card2.addView(Ui.field(c, "城市", citySpin))
         taxOn = Ui.switch(c)
         card2.addView(Ui.field(c, "按税后计薪", taxOn))
-        taxFund = numField(card2, "公积金个人比例 %", 112)
-        taxSocial = numField(card2, "社保个人比例 %", 112)
-        taxThreshold = numField(card2, "个税起征点（元/月）", 112)
-        taxCap = numField(card2, "缴费基数上限", 112)
-        taxFloor = numField(card2, "缴费基数下限", 112)
+        taxMode = Spinner(c).apply {
+            adapter = android.widget.ArrayAdapter(c, android.R.layout.simple_spinner_dropdown_item,
+                listOf("按五险一金比例估算", "按实际到手金额（更简单）"))
+            onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                    if (mute) return
+                    es().tax.mode = if (pos == 1) "net" else "rate"
+                    commitTax()
+                }
+                override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
+            }
+        }
+        card2.addView(Ui.field(c, "计税方式", taxMode))
+
+        // 两种计税方式的字段块，外面再包一层：
+        // fold() 展开卡片时会把 card2 的直接子 view 全部置 VISIBLE，
+        // 包一层后隐藏的块不会被误显示。
+        taxBlocks = LinearLayout(c).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        // 实发金额模式（不知道比例时用）
+        taxNetBlock = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
+        taxNetSalary = numField(parent = taxNetBlock, label = "每月实际到手（元）", width = 112)
+        taxMedical = numField(parent = taxNetBlock, label = "医保每月缴纳总额（元）", width = 112)
+        taxNetSocial = numField(parent = taxNetBlock, label = "社保个人比例 %", width = 112)
+        taxNetCoSocial = numField(parent = taxNetBlock, label = "公司社保比例 %", width = 112)
+        taxNetBase = numField(parent = taxNetBlock, label = "缴纳基数（元/月）", width = 112)
+        taxNetBreak = Ui.caption(c)
+        taxNetBlock.addView(taxNetBreak)
+        taxNetNote = Ui.caption(c)
+        taxNetBlock.addView(taxNetNote)
+        taxNetBlock.visibility = View.GONE
+        taxBlocks.addView(taxNetBlock)
+
+        // 比例模式（原有那套）
+        taxRateBlock = LinearLayout(c).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        taxRateBlock.addView(Ui.field(c, "省份（自动填参数）", provSpin))
+        taxRateBlock.addView(Ui.field(c, "城市", citySpin))
+        taxHasFund = Ui.switch(c)
+        taxRateBlock.addView(Ui.field(c, "公司有交公积金", taxHasFund))
+        taxFund = numField(taxRateBlock, "公积金个人比例 %", 112)
+        taxFundRow = taxFund.parent as LinearLayout
+        taxSocial = numField(taxRateBlock, "社保个人比例 %", 112)
+        taxThreshold = numField(taxRateBlock, "个税起征点（元/月）", 112)
+        taxCap = numField(taxRateBlock, "缴费基数上限", 112)
+        taxFloor = numField(taxRateBlock, "缴费基数下限", 112)
         taxTier = Spinner(c).apply {
             adapter = android.widget.ArrayAdapter(c, android.R.layout.simple_spinner_dropdown_item, TIER_LABELS)
         }
@@ -217,12 +278,15 @@ class SettingsPage(private val act: MainActivity) {
             }
             override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
         }
-        card2.addView(Ui.field(c, "缴费档位（个人与公司同基数）", taxTier))
-        taxTierCustom = numField(c = c, parent = card2, label = "自定义缴费基数（元/月）", width = 112)
+        taxRateBlock.addView(Ui.field(c, "缴费档位（个人与公司同基数）", taxTier))
+        taxTierCustom = numField(c = c, parent = taxRateBlock, label = "自定义缴费基数（元/月）", width = 112)
         taxTierCustomField = taxTierCustom.parent as LinearLayout
         taxTierCustomField.visibility = View.GONE
-        taxCoSocial = numField(card2, "公司社保比例 %", 112)
-        taxCoFund = numField(card2, "公司公积金比例 %", 112)
+        taxCoSocial = numField(taxRateBlock, "公司社保比例 %", 112)
+        taxCoFund = numField(taxRateBlock, "公司公积金比例 %", 112)
+        taxCoFundRow = taxCoFund.parent as LinearLayout
+        taxBlocks.addView(taxRateBlock)
+        card2.addView(taxBlocks)
         taxPreview = Ui.caption(c)
         card2.addView(taxPreview)
         card2.addView(Ui.caption(c).apply {
@@ -338,6 +402,26 @@ class SettingsPage(private val act: MainActivity) {
                 act.say(msg); act.save(); renderComputed(); act.tickNow() }
         }
         card4.addView(btnCal)
+        regionStatus = Ui.caption(c).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 6))
+        }
+        card4.addView(regionStatus)
+        val btnRegion = Ui.btn(c, "更新社保比例 / 基数 🧾", ghost = true)
+        btnRegion.setOnClickListener {
+            btnRegion.isEnabled = false
+            btnRegion.text = "正在更新… ⏳"
+            RegionData.refresh(act.st) {
+                act.save(); renderAll(); act.tickNow()
+                btnRegion.isEnabled = true
+                btnRegion.text = "更新社保比例 / 基数 🧾"
+                val at = RegionData.remoteUpdatedAt(act.st)
+                act.say(if (at != null) "社保比例与基数已更新到最新（数据日期 $at）✅"
+                        else "暂时连不上社保数据源，先用内置 / 缓存数据 📴")
+            }
+        }
+        card4.addView(btnRegion)
         fold(card4, "💾 数据与备份", open = false)
         root.addView(card4)
 
@@ -431,6 +515,37 @@ class SettingsPage(private val act: MainActivity) {
     /** 设置写入目标：草稿（未保存不生效），配合 beginEdit 的保存条 */
     private fun es() = act.editSettings()
 
+    /** 由医保缴纳总额反推社保比例与缴纳基数，回填到实发模式的输入框 */
+    private fun autoFillFromMedical() {
+        val t = es().tax
+        val rev = RegionData.reverseFromMedical(act.st, t.regionProv, t.regionCity, t.medicalIn) ?: return
+        t.socialRate = rev.socialP
+        t.coSocialRate = rev.socialC
+        t.customBase = Math.round(rev.base * 100.0) / 100.0
+        t.baseTier = "custom"
+    }
+
+    /** 反推明细文案（与 web 的 netBreakHTML 对齐） */
+    private fun netBreakText(): String {
+        val t = act.viewSettings().tax
+        val rev = RegionData.reverseFromMedical(act.st, t.regionProv, t.regionCity, t.medicalIn) ?: return ""
+        val sumP = rev.rows.sumOf { it.pay }; val sumC = rev.rows.sumOf { it.comp }
+        val rows = rev.rows.filter { it.rp > 0 || it.rc > 0 }
+            .joinToString(" · ") {
+                it.name + " " + trimNum(it.rp) + "%" + (if (it.rc > 0) "+" + trimNum(it.rc) + "%" else "") +
+                    " ¥" + Fmt.yuan2(it.pay + it.comp)
+            }
+        val limNote = if (rev.medCap > 0 && rev.medCap != rev.base)
+            "（按当地医保基数上下限 " + (if (rev.medFloor > 0) Fmt.yuan2(rev.medFloor) + " ~ " else "") + Fmt.yuan2(rev.medCap) + " 核对）"
+        else ""
+        return "反推缴费基数 ¥${Fmt.yuan2(rev.base)}$limNote（医保 ${trimNum(rev.medRate)}% → 总额 ÷ ${trimNum(rev.medRate)}%）\n" +
+            rows + "\n" +
+            "个人合计 ¥${Fmt.yuan2(sumP)}（${String.format("%.1f", rev.socialP)}%）· 公司合计 ¥${Fmt.yuan2(sumC)}（${String.format("%.1f", rev.socialC)}%）· 医保账户月到账 ¥${Fmt.yuan2(rev.medicalAccount)}" +
+            (if (rev.clamped) "\n⚠️ 反推出的基数 ¥${Fmt.yuan2(rev.raw)} 超出当地医保基数上下限，已按 ¥${Fmt.yuan2(rev.base)} 取值，请核对医保缴纳总额与所选地区。" else "")
+    }
+
+    private fun trimNum(v: Double): String = if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString()
+
     /** 所有设置写入后统一走这里：保存 + 重算展示 + 联动其它页 */
     private fun commitTax() {
         act.save()
@@ -459,6 +574,7 @@ class SettingsPage(private val act: MainActivity) {
         setLunch.setOnCheckedChangeListener { _, v -> if (!mute) { es().lunch = v; commitTax() } }
         setOvertime.setOnCheckedChangeListener { _, v -> if (!mute) { es().overtime = v; commitTax() } }
         taxOn.setOnCheckedChangeListener { _, v -> if (!mute) { es().tax.enabled = v; commitTax() } }
+        taxHasFund.setOnCheckedChangeListener { _, v -> if (!mute) { es().tax.hasFund = v; commitTax() } }
         remindOn.setOnCheckedChangeListener { _, v -> if (!mute) { es().remindEnabled = v } }
         ecoSw.setOnCheckedChangeListener { _, v -> if (!mute) { es().eco = v } }
         iconDarkSw.setOnCheckedChangeListener { _, v ->
@@ -492,6 +608,19 @@ class SettingsPage(private val act: MainActivity) {
             else { es().daysOverride = null; renderAll() }
         }
         bind(setPayday) { es().payday = it.toInt().coerceIn(1, 31) }
+        bind(taxNetSalary) { es().tax.netSalary = it.coerceIn(0.0, 1e8) }
+        bind(taxMedical) {
+            es().tax.medicalIn = it.coerceIn(0.0, 1e7)
+            autoFillFromMedical()          // 填了医保缴纳总额就自动反推社保比例与缴纳基数
+            renderAll()
+        }
+        bind(taxNetSocial) { es().tax.socialRate = it.coerceIn(0.0, 30.0) }
+        bind(taxNetCoSocial) { es().tax.coSocialRate = it.coerceIn(0.0, 30.0) }
+        bind(taxNetBase) {
+            val v = it.coerceIn(0.0, 1e7)
+            es().tax.customBase = v
+            es().tax.baseTier = if (v > 0) "custom" else "full"
+        }
         bind(taxFund) { es().tax.regionProv = "custom"; es().tax.regionCity = "custom"; es().tax.fundRate = it.coerceIn(0.0, 12.0) }
         bind(taxSocial) { es().tax.regionProv = "custom"; es().tax.regionCity = "custom"; es().tax.socialRate = it.coerceIn(0.0, 30.0) }
         bind(taxThreshold) { es().tax.threshold = it.coerceIn(0.0, 1e6) }
@@ -537,6 +666,18 @@ class SettingsPage(private val act: MainActivity) {
         setLunchStart.setText(s.lunchStart); setLunchEnd.setText(s.lunchEnd)
         setLunch.isChecked = s.lunch; setOvertime.isChecked = s.overtime
         taxOn.isChecked = s.tax.enabled
+        val isNet = s.tax.mode == "net"
+        taxMode.setSelection(if (isNet) 1 else 0)
+        taxNetBlock.visibility = if (isNet) View.VISIBLE else View.GONE
+        taxRateBlock.visibility = if (isNet) View.GONE else View.VISIBLE
+        taxNetSalary.setText(fmtIn(s.tax.netSalary))
+        taxMedical.setText(fmtIn(s.tax.medicalIn))
+        taxNetSocial.setText(fmtIn(s.tax.socialRate))
+        taxNetCoSocial.setText(fmtIn(s.tax.coSocialRate))
+        taxNetBase.setText(fmtIn(s.tax.customBase))
+        taxHasFund.isChecked = s.tax.hasFund
+        taxFundRow.visibility = if (s.tax.hasFund) View.VISIBLE else View.GONE
+        taxCoFundRow.visibility = if (s.tax.hasFund) View.VISIBLE else View.GONE
         taxFund.setText(fmtIn(s.tax.fundRate)); taxSocial.setText(fmtIn(s.tax.socialRate))
         taxThreshold.setText(fmtIn(s.tax.threshold)); taxCap.setText(fmtIn(s.tax.baseCap))
         taxFloor.setText(fmtIn(s.tax.baseFloor))
@@ -571,9 +712,26 @@ class SettingsPage(private val act: MainActivity) {
         val s = act.viewSettings()
         val tier = TIER_VALUES.getOrElse(taxTier.selectedItemPosition) { "full" }
         taxTierCustomField.visibility = if (tier == "custom") View.VISIBLE else View.GONE
+        val vis = if (s.tax.hasFund) View.VISIBLE else View.GONE
+        taxFundRow.visibility = vis; taxCoFundRow.visibility = vis
+
+        // 计税方式：实发金额模式 / 比例模式，两块互斥显示
+        val isNet = s.tax.mode == "net"
+        taxNetBlock.visibility = if (isNet) View.VISIBLE else View.GONE
+        taxRateBlock.visibility = if (isNet) View.GONE else View.VISIBLE
+        val netOk = isNet && s.tax.netSalary > 0
+        taxNetBreak.text = if (isNet) netBreakText() else ""
+        taxNetNote.text = if (netOk)
+            "税前月薪 ¥${Fmt.yuan2(s.salary)}（就用上面「收入与作息」里的月薪，不用重复填）· 每月扣 ¥${Fmt.yuan2(maxOf(0.0, s.salary - s.tax.netSalary))}，到手是税前的 ${String.format("%.1f", Pay.netRatio(s) * 100)}%。" +
+                (if (s.tax.medicalIn > 0) "已按医保缴纳总额自动反推下面的社保比例与缴纳基数，可手动微调。" else "填入「医保每月缴纳总额」后会自动反推社保比例与缴纳基数。")
+        else
+            "税前月薪就用上面「收入与作息」里的月薪（未扣五险一金），不用重复填。到手金额填工资条 / 银行卡实际到账的数；医保缴纳总额 = 工资条上医保个人扣款 + 单位缴纳部分，填了就能反推出缴费基数和社保比例。"
 
         val sal = s.salary
-        taxPreview.text = if (sal > 0) {
+        taxPreview.text = if (netOk) {
+            "按实际到手计薪：税前 ¥${Fmt.yuan2(sal)} → 到手 ¥${Fmt.yuan2(s.tax.netSalary)}，每月扣 ¥${Fmt.yuan2(maxOf(0.0, sal - s.tax.netSalary))}（${String.format("%.1f", 100 - Pay.netRatio(s) * 100)}%）· 计薪按 ${String.format("%.1f", Pay.netRatio(s) * 100)}% 折算" +
+                (if (s.tax.medicalIn > 0) "\n医保账户每月到账 ¥${Fmt.yuan2(s.tax.medicalIn)}（仅展示，不参与计算）" else "")
+        } else if (sal > 0) {
             val base = Pay.insBase(s)
             val regionName = when {
                 s.tax.regionCity != "custom" -> s.tax.regionCity
@@ -582,7 +740,10 @@ class SettingsPage(private val act: MainActivity) {
             }
             "按月薪 ¥${Fmt.yuan2(sal)} 估算：缴费基数 ¥${Fmt.yuan2(base)}（${Pay.TIER_NAMES[s.tax.baseTier] ?: "工资全额"}${if (regionName != null) " · ${regionName}参考" else ""}）\n" +
             "五险一金 −¥${Fmt.yuan2(Pay.insuranceMonthly(s))} · 个税 −¥${Fmt.yuan2(Pay.taxMonthly(s))} · 月到手 ¥${Fmt.yuan2(Pay.netMonthly(s))}（约为税前的 ${String.format("%.1f", Pay.netMonthly(s) / sal * 100)}%）\n" +
-            "公司为你缴 ¥${Fmt.yuan2(Pay.companyMonthly(s))}/月 = 社保 ¥${Fmt.yuan2(base * s.tax.coSocialRate / 100)} + 公积金 ¥${Fmt.yuan2(base * s.tax.coFundRate / 100)} · 公积金账户月进账 ¥${Fmt.yuan2(Pay.fundMonthlyIn(s))}"
+            if (s.tax.hasFund)
+                "公司为你缴 ¥${Fmt.yuan2(Pay.companyMonthly(s))}/月 = 社保 ¥${Fmt.yuan2(base * s.tax.coSocialRate / 100)} + 公积金 ¥${Fmt.yuan2(base * s.tax.coFundRate / 100)} · 公积金账户月进账 ¥${Fmt.yuan2(Pay.fundMonthlyIn(s))}"
+            else
+                "公司为你缴 ¥${Fmt.yuan2(Pay.companyMonthly(s))}/月（仅社保，未缴纳公积金）"
         } else "填写月薪后，这里显示到手与公司缴纳估算。"
 
         val now = LocalDate.now()
@@ -596,6 +757,11 @@ class SettingsPage(private val act: MainActivity) {
         calStatus.text = if (cr != null && cr.fetchedAt > 0)
             "节假日数据：已在线更新（holiday-cn · ${java.text.SimpleDateFormat("yyyy/M/d", java.util.Locale.CHINA).format(java.util.Date(cr.fetchedAt))}），与内置数据自动合并"
         else "节假日数据：内置 2026 离线可用，联网时自动更新"
+
+        val at = RegionData.remoteUpdatedAt(act.st)
+        regionStatus.text = if (at != null)
+            "社保比例 / 基数：已在线更新（数据日期 $at），与内置数据自动合并"
+        else "社保比例 / 基数：内置数据离线可用（各地每年 7 月前后调整），联网时自动更新"
 
         val L = act.viewLeave()
         val perDayH = L.perDay * (if (L.perDayUnit == "day") L.stdHours else 1.0)
