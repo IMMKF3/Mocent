@@ -417,7 +417,11 @@ class MainActivity : Activity() {
         todayPage.render(cents, d, t, status)
         leavePage.renderSummary()
         syncRestTab()
-        if (st.activeBreak != null) restPage.renderLive(System.currentTimeMillis())
+        if (st.activeBreak != null) {
+            val n = System.currentTimeMillis()
+            restPage.renderLive(n)
+            todayPage.renderFishLive(n)
+        }
 
         // 飘字：仅今日页可见时生成（避免切页回来堆积）
         if (t.second != lastFloaterSec && !st.settings.eco &&

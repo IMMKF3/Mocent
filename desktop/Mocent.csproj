@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    备用编译路径：本机 Git Bash 缺少 dirname/head/grep 等 coreutils，desktop/build.sh 无法直接运行；
+    且系统 csc.exe 被安全策略拦截。用 dotnet SDK（已装 9.0.203）编译同一份 Program.cs 做语法与类型校验。
+    正式发布仍走 build.sh + csc（产物是 .NET Framework 4.x 单 exe，不依赖运行时）。
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Mocent</AssemblyName>
+    <RootNamespace>Mocent</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>mocent.ico</ApplicationIcon>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0618;CS1591</NoWarn>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src/Program.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- WebView2 SDK：优先用 .tools 下已解出的 pkg，缺失时回退到 NuGet 还原 -->
+    <Reference Include="Microsoft.Web.WebView2.Core" Condition="Exists('.tools/webview2/pkg/lib/net462/Microsoft.Web.WebView2.Core.dll')">
+      <HintPath>../.tools/webview2/pkg/lib/net462/Microsoft.Web.WebView2.Core.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.WinForms" Condition="Exists('.tools/webview2/pkg/lib/net462/Microsoft.Web.WebView2.WinForms.dll')">
+      <HintPath>../.tools/webview2/pkg/lib/net462/Microsoft.Web.WebView2.WinForms.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40"
+                      Condition="!Exists('.tools/webview2/pkg/lib/net462/Microsoft.Web.WebView2.Core.dll')" />
+  </ItemGroup>
+
+</Project>

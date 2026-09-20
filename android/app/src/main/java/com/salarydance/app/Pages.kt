@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
@@ -29,6 +30,10 @@ val STATUS_META = mapOf(
     Status.WEEKEND to ("今天不上班" to Ui.TEAL),
     Status.HOLIDAY to ("法定节假日 · 不计薪" to Color.parseColor("#c9a227")),
 )
+
+/** 时长口语化：1 分钟以上按分钟，否则按秒 */
+private fun fmtDur(sec: Double): String =
+    if (sec >= 60) "${Math.round(sec / 60)} 分钟" else "${Math.round(sec)} 秒"
 
 // ==================== 今日 ====================
 
@@ -57,6 +62,12 @@ class TodayPage(private val act: MainActivity) {
     private lateinit var paydayLeft: TextView
     private lateinit var dayTotal: TextView
     private lateinit var leaveStat: TextView
+    private lateinit var fishTitle: TextView
+    private lateinit var fishSub: TextView
+    private lateinit var fishBtn: Button
+    private lateinit var fishLive: LinearLayout
+    private lateinit var fishTimer: TextView
+    private lateinit var fishCost: TextView
     lateinit var dockBubble: TextView
         private set
     lateinit var dockEmoji: TextView
@@ -219,6 +230,48 @@ class TodayPage(private val act: MainActivity) {
         statsCard.addView(stats)
         root.addView(statsCard)
 
+        // ---- 快捷摸鱼（不用切到摸鱼页就能开始 / 结束）----
+        val fishCard = Ui.card(c).apply {
+            setPadding(Ui.dp(c, 16), Ui.dp(c, 14), Ui.dp(c, 16), Ui.dp(c, 14))
+        }
+        val fishRow = LinearLayout(c).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        fishRow.addView(Ui.text(c, 30, Ui.INK).apply { text = "🐟" },
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { marginEnd = Ui.dp(c, 12) })
+        val fishInfo = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
+        fishTitle = Ui.text(c, 15, Ui.INK, true).apply { text = "今天还没摸鱼" }
+        fishSub = Ui.text(c, 12, Ui.SUB).apply { text = "点右边，看看这段休息值多少钱" }
+        fishInfo.addView(fishTitle); fishInfo.addView(fishSub)
+        fishRow.addView(fishInfo, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        fishBtn = Ui.btn(c, "开始摸鱼").apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setPadding(Ui.dp(c, 15), Ui.dp(c, 9), Ui.dp(c, 15), Ui.dp(c, 9))
+            background = Ui.gradBg(Color.parseColor("#8fd3ae"), Ui.GREEN, Ui.dp(c, 999).toFloat())
+        }
+        fishBtn.setOnClickListener { act.restPage.toggle() }
+        fishRow.addView(fishBtn)
+        fishCard.addView(fishRow)
+
+        fishLive = LinearLayout(c).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            visibility = View.GONE
+            setPadding(0, Ui.dp(c, 12), 0, 0)
+        }
+        fishTimer = Ui.text(c, 24, Ui.INK, true).apply { fontFeatureSettings = "tnum"; text = "00:00" }
+        fishLive.addView(fishTimer)
+        fishCost = Ui.text(c, 12, Ui.SUB).apply { text = "这段已计薪 ¥0.00" }
+        fishLive.addView(fishCost, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { marginStart = Ui.dp(c, 10) })
+        fishCard.addView(fishLive)
+        root.addView(fishCard)
+
         // ---- 桌宠 dock ----
         val dock = Ui.card(c)
         val dockRow = LinearLayout(c).apply {
@@ -338,12 +391,33 @@ class TodayPage(private val act: MainActivity) {
         daysNote.text = "按本月 " + Pay.monthWorkdays(st, d) + " 个工作日动态计算 · 已自动排除法定节假日、计入调休上班"
 
         val sal = s.salary
-        if (sal > 0 && (s.tax.enabled || s.tax.coSocialRate > 0 || s.tax.coFundRate > 0)) {
+        val isNet = s.tax.mode == "net"
+        if (sal > 0 && (s.tax.enabled || (!isNet && (s.tax.coSocialRate > 0 || Pay.effCoFundRate(s) > 0)))) {
             taxNote.visibility = View.VISIBLE
             val lines = mutableListOf<String>()
             if (s.tax.enabled)
-                lines.add("税后计薪中：五险一金 −¥${Fmt.yuan2(Pay.insuranceMonthly(s))}/月 · 个税 −¥${Fmt.yuan2(Pay.taxMonthly(s))}/月 · 月到手 ¥${Fmt.yuan2(Pay.netMonthly(s))}")
-            lines.add("公司为你缴 ¥${Fmt.yuan2(Pay.companyMonthly(s))}/月 · 公积金账户每月进账 ¥${Fmt.yuan2(Pay.fundMonthlyIn(s))}")
+                lines.add(if (isNet && s.tax.netSalary > 0)
+                    "按实际到手计薪：月到手 ¥${Fmt.yuan2(s.tax.netSalary)}（税前的 ${String.format("%.1f", Pay.netRatio(s) * 100)}%）"
+                else
+                    "税后计薪中：五险一金 −¥${Fmt.yuan2(Pay.insuranceMonthly(s))}/月 · 个税 −¥${Fmt.yuan2(Pay.taxMonthly(s))}/月 · 月到手 ¥${Fmt.yuan2(Pay.netMonthly(s))}")
+            // 实发金额模式：用填的社保比例 + 缴纳基数直接算公司缴纳（不再"仅展示"）
+            if (isNet) {
+                // Kotlin 不支持 val a = x, b = y 这种多变量声明，必须逐个写
+                val tp = s.tax.socialRate
+                val tc = s.tax.coSocialRate
+                val base = Pay.insBase(s)
+                lines.add(if (base > 0 && (tp > 0 || tc > 0))
+                    "社保个人 ${String.format("%.1f", tp)}% ≈ ¥${Fmt.yuan2(base * tp / 100)}/月 · 公司 ${String.format("%.1f", tc)}% ≈ ¥${Fmt.yuan2(base * tc / 100)}/月（基数 ¥${Fmt.yuan2(base)}）"
+                else
+                    "填「医保每月缴纳总额」可自动反推社保比例与缴费基数")
+                val medAcc = base * (RegionData.breakdown(act.st, s.tax.regionProv, s.tax.regionCity)["medical"]?.get(0) ?: 0.0) / 100
+                if (medAcc > 0) lines.add("医保个人账户每月到账 ≈ ¥${Fmt.yuan2(medAcc)}（仅展示）")
+            } else {
+                lines.add(if (Pay.fundMonthlyIn(s) > 0)
+                    "公司为你缴 ¥${Fmt.yuan2(Pay.companyMonthly(s))}/月 · 公积金账户每月进账 ¥${Fmt.yuan2(Pay.fundMonthlyIn(s))}"
+                else
+                    "公司为你缴 ¥${Fmt.yuan2(Pay.companyMonthly(s))}/月（未缴纳公积金）")
+            }
             taxNote.text = lines.joinToString("\n")
         } else taxNote.visibility = View.GONE
 
@@ -399,6 +473,46 @@ class TodayPage(private val act: MainActivity) {
         paydayLeft.text = Pay.daysToPayday(st, d).toString()
         val lc = Leave.calc(st, d, t)
         leaveStat.text = String.format("%.1f", lc.totalH / lc.stdH)
+    }
+
+    /** 刷新首页摸鱼块（开始 / 结束 / 跨日 / 被通知栏结束时调用） */
+    fun renderFish() {
+        val st = act.st
+        val d = LocalDate.now()
+        val now = System.currentTimeMillis()
+        var paid = 0.0; var sec = 0.0; var n = st.breaks.size
+        for (b in st.breaks) { paid += Pay.paidBreakSec(st, b.s, b.e); sec += (b.e - b.s) / 1000.0 }
+        val s = st.activeBreak
+        if (s != null) { paid += Pay.paidBreakSec(st, s, now); sec += (now - s) / 1000.0; n += 1 }
+        val cost = paid * Pay.perSec(st, d)
+        fishLive.visibility = if (s != null) View.VISIBLE else View.GONE
+        if (s != null) {
+            fishTitle.text = "摸鱼中…"
+            fishSub.text = "今天是第 $n 段 · 工资照常在涨 😌"
+            fishBtn.text = "结束"
+            fishBtn.background = Ui.gradBg(Color.parseColor("#f39898"), Ui.RED, Ui.dp(act, 999).toFloat())
+            renderFishLive(now)
+        } else {
+            fishTitle.text = when {
+                n == 0 -> "今天还没摸鱼"
+                cost > 0.005 -> "今日已摸 $n 次 · 赚了 ¥${Fmt.yuan2(cost)}"
+                else -> "今日已摸 $n 次 · 都是用爱摸的"
+            }
+            fishSub.text = if (n == 0) "点右边，看看这段休息值多少钱"
+                           else "累计 ${fmtDur(sec)} · 其中计薪 ${fmtDur(paid)}"
+            fishBtn.text = "开始摸鱼"
+            fishBtn.background = Ui.gradBg(Color.parseColor("#8fd3ae"), Ui.GREEN, Ui.dp(act, 999).toFloat())
+        }
+    }
+
+    /** 摸鱼进行中的实时刷新（由主循环驱动） */
+    fun renderFishLive(nowMs: Long) {
+        val st = act.st
+        val s = st.activeBreak ?: return
+        val el = (nowMs - s) / 1000.0
+        val paid = Pay.paidBreakSec(st, s, nowMs)
+        fishTimer.text = Fmt.pad2((el / 60).toInt()) + ":" + Fmt.pad2((el % 60).toInt())
+        fishCost.text = "这段已计薪 ¥" + Fmt.yuan2(paid * Pay.perSec(st, LocalDate.now()))
     }
 }
 
@@ -618,7 +732,8 @@ class RestPage(private val act: MainActivity) {
         else -> null
     }
 
-    private fun toggle() {
+    /** 首页快捷摸鱼块与本页面大按钮共用同一入口 */
+    fun toggle() {
         val st = act.st
         if (st.activeBreak == null) {
             val hint = breakHint(Pay.statusOf(st, LocalDate.now(), LocalTime.now()))
@@ -646,6 +761,7 @@ class RestPage(private val act: MainActivity) {
             renderRecords()
         }
         act.save()
+        act.todayPage.renderFish()      // 首页快捷块同步
     }
 
     fun renderLive(nowMs: Long) {
@@ -674,6 +790,7 @@ class RestPage(private val act: MainActivity) {
         bigBtn.background = Ui.gradBg(Color.parseColor("#8fd3ae"), Ui.GREEN, Ui.dp(act, 55).toFloat())
         timer.text = "00:00"; cost.text = "这一段摸鱼，对应计薪 ¥0.00"
         note.visibility = View.GONE
+        act.todayPage.renderFish()
     }
 
     /** 重启/跨日后恢复按钮状态 */
@@ -725,9 +842,6 @@ class RestPage(private val act: MainActivity) {
             list.addView(row)
         }
     }
-
-    private fun fmtDur(sec: Double): String =
-        if (sec >= 60) "${Math.round(sec / 60)} 分钟" else "${Math.round(sec)} 秒"
 
     private fun fmtHMS(ts: Long): String = Fmt.hhmmss(
         java.time.Instant.ofEpochMilli(ts).atZone(java.time.ZoneId.systemDefault()).toLocalTime())
