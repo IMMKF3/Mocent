@@ -198,6 +198,8 @@
   .caption{font-size:11.5px;color:#bfae98;margin-top:10px;line-height:1.6}
 
   .break-main{display:flex;flex-direction:column;align-items:center;text-align:center;padding:22px 18px 18px;min-height:430px}
+  /* 年假页余额卡：与 break-main 同款居中排版，但内容少，不设 min-height（否则大片空白） */
+  .leave-main{display:flex;flex-direction:column;align-items:center;text-align:center;padding:22px 18px 18px}
   .break-head{width:100%}
   .break-timer{font-size:54px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:1px}
   .break-cost{color:var(--sub);font-size:13.5px;margin:6px 0 0}
@@ -429,7 +431,7 @@
 
     <!-- ================= 年假 ================= -->
     <section class="page hidden" id="page-leave">
-      <div class="card break-main">
+      <div class="card leave-main">
         <div class="status-chip" style="background:#eef6e6;color:#5a8a4a"><i class="dot" style="background:#7dbd6a"></i>🌴 年假余额 · 上班也在自动攒</div>
         <div class="leave-big"><span id="leaveDays">0.00</span><span class="leave-unit"> 天</span></div>
         <div class="leave-sub">= <b id="leaveHours">0.0</b> 小时 · 折算带薪假 ≈ <b id="leaveMoney">¥0</b></div>

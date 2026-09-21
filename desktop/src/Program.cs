@@ -21,7 +21,7 @@ using Microsoft.Web.WebView2.WinForms;
 
 internal static class Program
 {
-    public const string APP_VERSION = "1.4.0";
+    public const string APP_VERSION = "1.4.1";
     const string APP_NAME = "摸薪 Mocent";
     const string MUTEX_NAME = "Local\\Mocent.SingleInstance";
     const string SHOW_EVENT_NAME = "Local\\Mocent.OpenWindow";
@@ -756,17 +756,6 @@ public class MainForm : Form
     [DllImport("user32.dll")]
     static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
-    internal static Region RoundedRegion(int w, int h, int r)
-    {
-        System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
-        gp.AddArc(0, 0, r * 2, r * 2, 180, 180);
-        gp.AddArc(w - r * 2, 0, r * 2, r * 2, 0, 180);
-        gp.AddArc(w - r * 2, h - r * 2, r * 2, r * 2, 0, 90);
-        gp.AddArc(0, h - r * 2, r * 2, r * 2, 90, 90);
-        gp.CloseFigure();
-        return new Region(gp);
-    }
-
     [DllImport("user32.dll")]
     static extern int GetSystemMetrics(int index);
 
@@ -817,7 +806,8 @@ public class MiniForm : Form
         BackColor = Color.FromArgb(0xFF, 0xFD, 0xF9);
         Font = new Font("Microsoft YaHei UI", 9F);
         Opacity = 0.92;
-        Region = MainForm.RoundedRegion(Width, Height, 16);   // 圆角卡片外观
+        // 圆角改用 DWM 方案（见 OnHandleCreated），不再用 Region 硬裁剪 —— 那会在
+        // DPI 缩放下把浮窗内容裁残缺（v1.4.0 回归的根因）。
 
         capLbl = new Label { Text = "今日已计薪", AutoSize = true,
             ForeColor = Color.FromArgb(0xA4, 0x91, 0x7C), Location = new Point(14, 11) };
@@ -901,6 +891,30 @@ public class MiniForm : Form
         // 双击浮窗 = 回主窗口。直接问 ownerForm，不再绕静态的 Program.Forefront()
         c.DoubleClick += delegate { if (ownerForm != null) ownerForm.RestoreFromMini(); };
         foreach (Control ch in c.Controls) HookDrag(ch);
+    }
+
+    /* ---------- 圆角（DWM 方案） ----------
+       之前同事用 Region = RoundedRegion(...) 做圆角，但 Region 是硬像素裁剪：
+       在 DPI 缩放（125%/150%）下 Region 坐标与实际窗口像素错位，会把内容
+       连同一角窗口一起裁掉，浮窗表现为"残缺"（右下角缺一块）。
+       改用 DWM 的圆角偏好（Win10 1809+ API，Win11 生效）：系统级真圆角，
+       不裁剪任何客户区内容；Win10 上 API 静默无效，退化为直角 —— 完整但不圆，
+       两种结果都比"残缺"好。 */
+    const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    const int DWMWCP_ROUND = 2;
+
+    [DllImport("dwmapi.dll")]
+    static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        try
+        {
+            int pref = DWMWCP_ROUND;
+            DwmSetWindowAttribute(Handle, DWMWA_WINDOW_CORNER_PREFERENCE, ref pref, sizeof(int));
+        }
+        catch { }   // 旧系统没有该 API：直角浮窗，不影响使用
     }
 
     protected override void OnPaint(PaintEventArgs e)
